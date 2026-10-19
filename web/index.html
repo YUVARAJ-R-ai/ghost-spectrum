@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KINESIS — Continuous Electromagnetic Motion & CSI Suite</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-group">
+        <div class="logo-badge">⚡ KINESIS</div>
+        <div class="logo-sub">Kinematic Inference through Non-contact Electromagnetic Sensing</div>
+      </div>
+      <div class="controls-group">
+        <div class="mode-selector">
+          <button id="btn-hw" class="mode-btn active" onclick="setMode('hardware')">🔌 Live Hardware</button>
+          <button id="btn-sim" class="mode-btn" onclick="setMode('simulator')">🪐 Physics Simulator</button>
+        </div>
+        <div class="status-pill" id="status-pill">
+          <span class="status-dot"></span>
+          <span id="status-text">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Alert Banners -->
+    <div id="hw-disconnect-banner" class="alert-banner hidden">
+      <span class="banner-icon">⚠️</span>
+      <span class="banner-text"><strong>ESP32 Disconnected:</strong> No device detected on <code>/dev/ttyUSB1</code>. Plug in your ESP32 receiver board, or switch to <strong>🪐 Physics Simulator</strong> above to test in software.</span>
+    </div>
+
+    <div id="sim-active-banner" class="alert-banner sim-banner hidden">
+      <span class="banner-icon">🧪</span>
+      <span class="banner-text"><strong>Physics Simulator Mode:</strong> You are currently in virtual simulation mode, not reading real hardware. Hand is stationary by default. Drag the yellow hand dot below in the Fresnel Desk to test Doppler motion.</span>
+    </div>
+
+    <!-- Main Grid -->
+    <main class="dashboard-grid">
+      <!-- Left Panel: Signal & Spectrum -->
+      <section class="card panel-signals">
+        <div class="card-header">
+          <h3>OFDM Subcarrier Perturbation Waterfall</h3>
+          <span class="tag" id="subcarrier-count">126 Subcarriers @ 100 Hz</span>
+        </div>
+        <div class="canvas-container waterfall-container">
+          <canvas id="waterfall-canvas"></canvas>
+        </div>
+
+        <div class="card-header mt-4">
+          <h3>Doppler Velocity Spectrum (DFS)</h3>
+          <span class="tag" id="velocity-val">0.00 m/s</span>
+        </div>
+        <div class="canvas-container doppler-container">
+          <canvas id="doppler-canvas"></canvas>
+        </div>
+      </section>
+
+      <!-- Right Panel: Interaction & Air Cursor -->
+      <section class="card panel-interaction">
+        <div class="card-header">
+          <h3>2D Air Cursor & Gesture Intent</h3>
+          <div class="gesture-badge" id="gesture-badge">STILL (95%)</div>
+        </div>
+
+        <!-- Air Cursor Canvas -->
+        <div class="canvas-container cursor-container">
+          <canvas id="cursor-canvas"></canvas>
+          <div class="canvas-overlay">
+            <button class="icon-btn" onclick="clearTrail()">Clear Trail</button>
+            <button class="icon-btn" id="btn-draw" onclick="toggleDrawing()">Air Draw: OFF</button>
+          </div>
+        </div>
+
+        <!-- Simulator Sandbox (Shown when in Simulator Mode) -->
+        <div id="sim-sandbox" class="sim-sandbox hidden">
+          <div class="card-header mt-2">
+            <h4>Fresnel Desk Simulation Sandbox</h4>
+            <span class="sub-tag">Drag hand below to test physics</span>
+          </div>
+          <div class="canvas-container sandbox-container">
+            <canvas id="sandbox-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Metrics & Telemetry Bar -->
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <span class="metric-label">Motion Energy (ΔCSI)</span>
+            <span class="metric-value" id="metric-energy">0.00</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-label">Radial Velocity</span>
+            <span class="metric-value" id="metric-vel">0.00 m/s</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-label">Stream Sequence</span>
+            <span class="metric-value" id="metric-seq">0</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
