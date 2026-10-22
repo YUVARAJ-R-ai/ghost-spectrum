@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST-SPECTRUM // Hardware Interconnect & Circuit Schematics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #090d14;
+            --bg-card: #0f1522;
+            --bg-subtle: #141c2d;
+            --border: #1e2a40;
+            --border-hover: #2e4163;
+            --text-main: #f0f4f8;
+            --text-dim: #94a3b8;
+            --text-muted: #64748b;
+            --accent-cyan: #00e5ff;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --font-mono: 'JetBrains Mono', monospace, ui-monospace;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 24px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .doc-title h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-rev {
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            background: #112836;
+            color: var(--accent-cyan);
+            border: 1px solid #1a4d6b;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .doc-title p {
+            color: var(--text-dim);
+            font-size: 0.88rem;
+            margin-top: 6px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-action:hover {
+            border-color: var(--accent-cyan);
+            background: var(--bg-subtle);
+        }
+
+        .btn-primary {
+            background: #003747;
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .btn-primary:hover {
+            background: #005066;
+        }
+
+        /* Warning Banner */
+        .callout-banner {
+            background: #251214;
+            border: 1px solid #6b1f24;
+            border-left: 5px solid var(--accent-red);
+            border-radius: 6px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .callout-icon {
+            font-size: 1.3rem;
+            line-height: 1;
+        }
+
+        .callout-content h3 {
+            font-size: 0.9rem;
+            color: #fca5a5;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            margin-bottom: 4px;
+        }
+
+        .callout-content p {
+            font-size: 0.85rem;
+            color: #fecaca;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-dim);
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: var(--bg-card);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-cyan);
+            background: var(--bg-card);
+            border-color: var(--border);
+            border-bottom: 2px solid var(--accent-cyan);
+        }
+
+        .tab-badge {
+            background: var(--bg-canvas);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+        }
+
+        /* Diagram Sections */
+        .diagram-section {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .diagram-section.active {
+            display: flex;
+        }
+
+        /* Main Grid: Schematic Left, Details Right */
+        .schematic-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+        }
+
+        @media (max-width: 1100px) {
+            .schematic-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Canvas Card */
+        .canvas-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .canvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .canvas-title {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-pill {
+            font-size: 0.7rem;
+            background: #142338;
+            color: var(--accent-blue);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #1f3659;
+        }
+
+        /* SVG Schematic Container */
+        .svg-container {
+            width: 100%;
+            background: #080c14;
+            border: 1px solid #162033;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            position: relative;
+        }
+
+        .svg-container svg {
+            width: 100%;
+            height: auto;
+            max-height: 580px;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+        }
+
+        /* Interactive Wire Hover */
+        .wire-path {
+            transition: stroke-width 0.2s, stroke 0.2s, filter 0.2s;
+            cursor: pointer;
+        }
+
+        .wire-path:hover, .wire-path.highlighted {
+            stroke-width: 4.5 !important;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        /* Details Card */
+        .details-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .details-card h3 {
+            font-size: 0.95rem;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        /* Pinout Table */
+        .pin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+        }
+
+        .pin-table th {
+            text-align: left;
+            padding: 8px 10px;
+            background: var(--bg-subtle);
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+        }
+
+        .pin-table td {
+            padding: 9px 10px;
+            border-bottom: 1px solid #151e2f;
+            vertical-align: middle;
+        }
+
+        .pin-table tr:hover td {
+            background: #141d2e;
+            cursor: pointer;
+        }
+
+        .pin-color-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .pin-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: #162033;
+            color: var(--text-main);
+            border: 1px solid #233352;
+        }
+
+        /* Note Cards */
+        .tech-note {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 0.8rem;
+        }
+
+        .tech-note strong {
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.78rem;
+        }
+
+        .tech-note p {
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* System Topology Panel */
+        .topology-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .step-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .step-cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .step-card {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .step-num {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--accent-cyan);
+            background: #0c2636;
+            border: 1px solid #144460;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .step-card h4 {
+            font-size: 0.9rem;
+            font-family: var(--font-mono);
+            margin-bottom: 6px;
+        }
+
+        .step-card p {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* Master Matrix Table */
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            margin-top: 16px;
+        }
+
+        .matrix-table th {
+            background: #111827;
+            padding: 10px 14px;
+            text-align: left;
+            border: 1px solid var(--border);
+            color: var(--accent-cyan);
+            font-size: 0.75rem;
+        }
+
+        .matrix-table td {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .matrix-table tr:nth-child(even) td {
+            background: #0d121c;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 48px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-family: var(--font-mono);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="doc-title">
+                <h1>GHOST-SPECTRUM <span class="badge-rev">HW SCHEMATIC // REV 1.0</span></h1>
+                <p>Hardware Interconnect, Pin-by-Pin Wiring Schematics &amp; Isolation Topology</p>
+            </div>
+            <div class="header-actions">
+                <a href="/" class="btn-action">
+                    <span>←</span> Mission Control Dashboard
+                </a>
+                <button class="btn-action btn-primary" onclick="window.print()">
+                    <span>🖨️</span> Print Bench Sheet
+                </button>
+            </div>
+        </header>
+
+        <!-- Critical Voltage Safety Banner -->
+        <div class="callout-banner">
+            <div class="callout-icon">⚠️</div>
+            <div class="callout-content">
+                <h3>CRITICAL VOLTAGE RULE: NRF24L01+ REQUIRES 3.3V POWER</h3>
+                <p>Always connect the NRF24L01+ module VCC pin strictly to the ESP32 <strong>3.3V (3V3)</strong> pin. Connecting NRF24 to 5V (VIN) will instantly destroy the RF transceiver chip. The FS1000A 433MHz TX and Relay, however, <strong>require 5V</strong> for proper RF range and coil energization.</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('tab-node1', this)">
+                <span>Node 1: Sentinel</span>
+                <span class="tab-badge">ESP32 + NRF24L01</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-node2', this)">
+                <span>Node 2: Mission Node</span>
+                <span class="tab-badge">ESP32 + OLED + 433M TX</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-node3', this)">
+                <span>Node 3: Sub-GHz Telemetry Gateway</span>
+                <span class="tab-badge">Arduino Uno + Relay</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-system', this)">
+                <span>System Topology</span>
+                <span class="tab-badge">Tri-Node HIL Overview</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-matrix', this)">
+                <span>Master Wiring Matrix</span>
+                <span class="tab-badge">Quick Bench Reference</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-flashing', this)">
+                <span>⚡ Flashing Guide</span>
+                <span class="tab-badge">Step-by-Step Firmware</span>
+            </button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 1: NODE 1 - SPECTRUM SENTINEL                            -->
+        <!-- ============================================================ -->
+        <div class="diagram-section active" id="tab-node1">
+            <div class="schematic-grid">
+                <!-- SVG Schematic -->
+                <div class="canvas-card">
+                    <div class="canvas-header">
+                        <div class="canvas-title">
+                            <span>Node 1 Circuit Schematic: Promiscuous Sniffer &amp; 125-Ch Sweeper</span>
+                            <span class="canvas-pill">Hardware VSPI Bus</span>
+                        </div>
+                    </div>
+                    <div class="svg-container">
+                        <svg viewBox="0 0 880 500" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="grad-esp" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#121824"/>
+                                    <stop offset="100%" stop-color="#1a2334"/>
+                                </linearGradient>
+                                <linearGradient id="grad-nrf" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#0f1d2e"/>
+                                    <stop offset="100%" stop-color="#15283f"/>
+                                </linearGradient>
+                            </defs>
+
+                            <pattern id="grid1" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <circle cx="10" cy="10" r="1" fill="#172235" />
+                            </pattern>
+                            <rect width="880" height="500" fill="url(#grid1)" rx="6"/>
+
+                            <!-- ESP32 DevKit (Left) -->
+                            <rect x="70" y="60" width="260" height="380" rx="10" fill="url(#grad-esp)" stroke="#2b3b55" stroke-width="2"/>
+                            <rect x="120" y="45" width="160" height="30" rx="4" fill="#0d131d" stroke="#223045"/>
+                            <path d="M 140 55 L 160 55 L 160 70 L 180 70 L 180 55 L 200 55 L 200 70 L 220 70 L 220 55 L 240 55" fill="none" stroke="#d29922" stroke-width="2"/>
+                            <text x="200" y="98" fill="#e6edf3" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle">ESP32 DevKit V1</text>
+                            <text x="200" y="114" fill="#64748b" font-family="JetBrains Mono" font-size="10" text-anchor="middle">NODE 1: SPECTRUM SENTINEL</text>
+
+                            <!-- USB Port -->
+                            <rect x="175" y="430" width="50" height="20" rx="3" fill="#334155" stroke="#475569"/>
+                            <text x="200" y="444" fill="#cbd5e1" font-family="JetBrains Mono" font-size="8" text-anchor="middle">TYPE-C</text>
+
+                            <!-- Pins on ESP32 -->
+                            <circle cx="330" cy="140" r="6" fill="#ff4757" id="esp1-3v3"/>
+                            <text x="315" y="144" fill="#ff4757" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">3V3</text>
+
+                            <circle cx="330" cy="180" r="6" fill="#94a3b8" id="esp1-gnd"/>
+                            <text x="315" y="184" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GND</text>
+
+                            <circle cx="330" cy="220" r="6" fill="#ffa502" id="esp1-d4"/>
+                            <text x="315" y="224" fill="#ffa502" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 4 (CE)</text>
+
+                            <circle cx="330" cy="260" r="6" fill="#eccc68" id="esp1-d5"/>
+                            <text x="315" y="264" fill="#eccc68" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 5 (CSN)</text>
+
+                            <circle cx="330" cy="300" r="6" fill="#2ed573" id="esp1-d18"/>
+                            <text x="315" y="304" fill="#2ed573" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 18 (SCK)</text>
+
+                            <circle cx="330" cy="340" r="6" fill="#a55eea" id="esp1-d19"/>
+                            <text x="315" y="344" fill="#a55eea" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 19 (MISO)</text>
+
+                            <circle cx="330" cy="380" r="6" fill="#1e90ff" id="esp1-d23"/>
+                            <text x="315" y="384" fill="#1e90ff" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 23 (MOSI)</text>
+
+                            <!-- NRF24L01 Module (Right) -->
+                            <rect x="560" y="100" width="240" height="300" rx="8" fill="url(#grad-nrf)" stroke="#1a4d6b" stroke-width="2"/>
+                            <path d="M 770 120 L 785 120 L 785 140 L 770 140 L 770 160 L 785 160 L 785 180 L 770 180" fill="none" stroke="#d29922" stroke-width="2.5"/>
+                            <text x="680" y="135" fill="#00e5ff" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle">NRF24L01+ 2.4GHz</text>
+                            <text x="680" y="152" fill="#64748b" font-family="JetBrains Mono" font-size="9" text-anchor="middle">125-CHANNEL RPD SWEEPER</text>
+
+                            <!-- NRF Pins -->
+                            <circle cx="560" cy="190" r="6" fill="#94a3b8" id="nrf-gnd"/>
+                            <text x="580" y="194" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="600">Pin 1: GND</text>
+
+                            <circle cx="560" cy="220" r="6" fill="#ff4757" id="nrf-vcc"/>
+                            <text x="580" y="224" fill="#ff4757" font-family="JetBrains Mono" font-size="11" font-weight="700">Pin 2: VCC (3V3)</text>
+
+                            <circle cx="560" cy="250" r="6" fill="#ffa502" id="nrf-ce"/>
+                            <text x="580" y="254" fill="#ffa502" font-family="JetBrains Mono" font-size="11" font-weight="600">Pin 3: CE</text>
+
+                            <circle cx="560" cy="280" r="6" fill="#eccc68" id="nrf-csn"/>
+                            <text x="580" y="284" fill="#eccc68" font-family="JetBrains Mono" font-size="11" font-weight="600">Pin 4: CSN</text>
+
+                            <circle cx="560" cy="310" r="6" fill="#2ed573" id="nrf-sck"/>
+                            <text x="580" y="314" fill="#2ed573" font-family="JetBrains Mono" font-size="11" font-weight="600">Pin 5: SCK</text>
+
+                            <circle cx="560" cy="340" r="6" fill="#1e90ff" id="nrf-mosi"/>
+                            <text x="580" y="344" fill="#1e90ff" font-family="JetBrains Mono" font-size="11" font-weight="600">Pin 6: MOSI</text>
+
+                            <circle cx="560" cy="370" r="6" fill="#a55eea" id="nrf-miso"/>
+                            <text x="580" y="374" fill="#a55eea" font-family="JetBrains Mono" font-size="11" font-weight="600">Pin 7: MISO</text>
+
+                            <!-- Wires -->
+                            <path class="wire-path" id="w-3v3" d="M 330 140 C 420 140, 470 220, 560 220" fill="none" stroke="#ff4757" stroke-width="2.5"/>
+                            <path class="wire-path" id="w-gnd" d="M 330 180 C 410 180, 480 190, 560 190" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="4,2"/>
+                            <path class="wire-path" id="w-ce" d="M 330 220 C 410 220, 470 250, 560 250" fill="none" stroke="#ffa502" stroke-width="2.5"/>
+                            <path class="wire-path" id="w-csn" d="M 330 260 C 410 260, 470 280, 560 280" fill="none" stroke="#eccc68" stroke-width="2.5"/>
+                            <path class="wire-path" id="w-sck" d="M 330 300 C 410 300, 470 310, 560 310" fill="none" stroke="#2ed573" stroke-width="2.5"/>
+                            <path class="wire-path" id="w-miso" d="M 330 340 C 410 340, 470 370, 560 370" fill="none" stroke="#a55eea" stroke-width="2.5"/>
+                            <path class="wire-path" id="w-mosi" d="M 330 380 C 410 380, 470 340, 560 340" fill="none" stroke="#1e90ff" stroke-width="2.5"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Wiring Details -->
+                <div class="details-card">
+                    <h3>Node 1 Interconnect Spec</h3>
+                    <table class="pin-table">
+                        <thead>
+                            <tr>
+                                <th>NRF24 PIN</th>
+                                <th>ESP32 PIN</th>
+                                <th>SIGNAL BUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr onmouseenter="highlightWire('w-3v3')" onmouseleave="unhighlightWire('w-3v3')">
+                                <td><span class="pin-color-dot" style="background:#ff4757"></span>VCC (Pin 2)</td>
+                                <td><span class="pin-badge">3V3</span></td>
+                                <td>3.3V Power</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w-gnd')" onmouseleave="unhighlightWire('w-gnd')">
+                                <td><span class="pin-color-dot" style="background:#64748b"></span>GND (Pin 1)</td>
+                                <td><span class="pin-badge">GND</span></td>
+                                <td>Ground</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w-ce')" onmouseleave="unhighlightWire('w-ce')">
+                                <td><span class="pin-color-dot" style="background:#ffa502"></span>CE (Pin 3)</td>
+                                <td><span class="pin-badge">GPIO 4</span></td>
+                                <td>Chip Enable (RX)</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w-csn')" onmouseleave="unhighlightWire('w-csn')">
+                                <td><span class="pin-color-dot" style="background:#eccc68"></span>CSN (Pin 4)</td>
+                                <td><span class="pin-badge">GPIO 5</span></td>
+                                <td>SPI Chip Select</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w-sck')" onmouseleave="unhighlightWire('w-sck')">
+                                <td><span class="pin-color-dot" style="background:#2ed573"></span>SCK (Pin 5)</td>
+                                <td><span class="pin-badge">GPIO 18</span></td>
+                                <td>VSPI Clock</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w-mosi')" onmouseleave="unhighlightWire('w-mosi')">
+                                <td><span class="pin-color-dot" style="background:#1e90ff"></span>MOSI (Pin 6)</td>
+                                <td><span class="pin-badge">GPIO 23</span></td>
+                                <td>VSPI Data In</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w-miso')" onmouseleave="unhighlightWire('w-miso')">
+                                <td><span class="pin-color-dot" style="background:#a55eea"></span>MISO (Pin 7)</td>
+                                <td><span class="pin-badge">GPIO 19</span></td>
+                                <td>VSPI Data Out</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="tech-note">
+                        <strong>Hardware Role &amp; Operation:</strong>
+                        <p>Node 1 operates concurrently on two RF domains: the internal ESP32 radio captures 802.11 Layer-2 frames (deauth, disassoc, beacons) in promiscuous mode, while the NRF24L01+ sweeps 125 discrete 1 MHz channels across 2.400–2.525 GHz to detect physical jamming carriers via the RPD register.</p>
+                    </div>
+
+                    <div class="tech-note">
+                        <strong>Capacitor Recommendation:</strong>
+                        <p>If you experience sporadic NRF24 resets, solder or push a <strong>10µF to 100µF electrolytic capacitor</strong> directly across the VCC and GND pins of the NRF24 module on the breadboard to eliminate supply ripple.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 2: NODE 2 - MISSION TELEMETRY & 433MHZ TRANSMITTER       -->
+        <!-- ============================================================ -->
+        <div class="diagram-section" id="tab-node2">
+            <div class="schematic-grid">
+                <!-- SVG Schematic -->
+                <div class="canvas-card">
+                    <div class="canvas-header">
+                        <div class="canvas-title">
+                            <span>Node 2 Circuit Schematic: Mission Node, OLED &amp; Sub-GHz Failover TX</span>
+                            <span class="canvas-pill">I2C + 1-Wire ASK</span>
+                        </div>
+                    </div>
+                    <div class="svg-container">
+                        <svg viewBox="0 0 880 500" xmlns="http://www.w3.org/2000/svg">
+                            <pattern id="grid2" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <circle cx="10" cy="10" r="1" fill="#172235" />
+                            </pattern>
+                            <rect width="880" height="500" fill="url(#grid2)" rx="6"/>
+
+                            <!-- ESP32 #2 (Center-Left) -->
+                            <rect x="70" y="60" width="260" height="380" rx="10" fill="#121824" stroke="#2b3b55" stroke-width="2"/>
+                            <rect x="120" y="45" width="160" height="30" rx="4" fill="#0d131d" stroke="#223045"/>
+                            <text x="200" y="98" fill="#e6edf3" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle">ESP32 DevKit V1</text>
+                            <text x="200" y="114" fill="#64748b" font-family="JetBrains Mono" font-size="10" text-anchor="middle">NODE 2: MISSION CONTROLLER</text>
+
+                            <!-- Pins on ESP32 -->
+                            <circle cx="330" cy="140" r="6" fill="#ff4757" id="esp2-3v3"/>
+                            <text x="315" y="144" fill="#ff4757" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">3V3</text>
+
+                            <circle cx="330" cy="180" r="6" fill="#94a3b8" id="esp2-gnd"/>
+                            <text x="315" y="184" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GND</text>
+
+                            <circle cx="330" cy="220" r="6" fill="#2ed573" id="esp2-scl"/>
+                            <text x="315" y="224" fill="#2ed573" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 22 (SCL)</text>
+
+                            <circle cx="330" cy="260" r="6" fill="#1e90ff" id="esp2-sda"/>
+                            <text x="315" y="264" fill="#1e90ff" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 21 (SDA)</text>
+
+                            <circle cx="330" cy="320" r="6" fill="#ff6b81" id="esp2-vin"/>
+                            <text x="315" y="324" fill="#ff6b81" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">VIN (5V Rail)</text>
+
+                            <circle cx="330" cy="360" r="6" fill="#ff7f50" id="esp2-d17"/>
+                            <text x="315" y="364" fill="#ff7f50" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">GPIO 17 (TX DATA)</text>
+
+                            <!-- OLED Display (Top-Right) -->
+                            <rect x="560" y="60" width="240" height="150" rx="6" fill="#090d14" stroke="#25354e" stroke-width="2"/>
+                            <rect x="580" y="80" width="200" height="90" rx="3" fill="#001824" stroke="#00e5ff" stroke-width="1.5"/>
+                            <text x="680" y="105" fill="#00e5ff" font-family="JetBrains Mono" font-size="9" text-anchor="middle">&gt;&gt; GHOST-SPECTRUM &lt;&lt;</text>
+                            <text x="680" y="125" fill="#388bfd" font-family="JetBrains Mono" font-size="10" font-weight="700" text-anchor="middle">LINK: 2.4GHz [OK]</text>
+                            <text x="680" y="145" fill="#64748b" font-family="JetBrains Mono" font-size="9" text-anchor="middle">OOB: 433MHz STANDBY</text>
+                            <text x="680" y="160" fill="#2ed573" font-family="JetBrains Mono" font-size="8" text-anchor="middle">PKT #4182</text>
+
+                            <circle cx="560" cy="85" r="5" fill="#94a3b8"/>
+                            <text x="545" y="89" fill="#94a3b8" font-family="JetBrains Mono" font-size="9" text-anchor="end">GND</text>
+
+                            <circle cx="560" cy="110" r="5" fill="#ff4757"/>
+                            <text x="545" y="114" fill="#ff4757" font-family="JetBrains Mono" font-size="9" text-anchor="end">VCC</text>
+
+                            <circle cx="560" cy="135" r="5" fill="#2ed573"/>
+                            <text x="545" y="139" fill="#2ed573" font-family="JetBrains Mono" font-size="9" text-anchor="end">SCL</text>
+
+                            <circle cx="560" cy="160" r="5" fill="#1e90ff"/>
+                            <text x="545" y="164" fill="#1e90ff" font-family="JetBrains Mono" font-size="9" text-anchor="end">SDA</text>
+
+                            <!-- FS1000A 433MHz Transmitter (Bottom-Right) -->
+                            <rect x="560" y="270" width="240" height="170" rx="6" fill="#152219" stroke="#1f442b" stroke-width="2"/>
+                            <circle cx="680" cy="330" r="16" fill="#1f442b" stroke="#3fb950" stroke-width="2"/>
+                            <text x="680" y="334" fill="#3fb950" font-family="JetBrains Mono" font-size="8" font-weight="700" text-anchor="middle">433.92</text>
+                            <text x="680" y="370" fill="#e6edf3" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="middle">FS1000A 433MHz TX</text>
+
+                            <path d="M 770 285 L 810 285 L 810 240" fill="none" stroke="#d29922" stroke-width="3"/>
+                            <text x="815" y="245" fill="#eccc68" font-family="JetBrains Mono" font-size="9" font-weight="700">17.3cm ANT WIRE</text>
+
+                            <circle cx="560" cy="330" r="5" fill="#ff7f50"/>
+                            <text x="545" y="334" fill="#ff7f50" font-family="JetBrains Mono" font-size="9" text-anchor="end">DATA</text>
+
+                            <circle cx="560" cy="365" r="5" fill="#ff6b81"/>
+                            <text x="545" y="369" fill="#ff6b81" font-family="JetBrains Mono" font-size="9" text-anchor="end">VCC (5V)</text>
+
+                            <circle cx="560" cy="400" r="5" fill="#94a3b8"/>
+                            <text x="545" y="404" fill="#94a3b8" font-family="JetBrains Mono" font-size="9" text-anchor="end">GND</text>
+
+                            <!-- Wires -->
+                            <path class="wire-path" id="w2-oled-vcc" d="M 330 140 C 420 140, 480 110, 560 110" fill="none" stroke="#ff4757" stroke-width="2.5"/>
+                            <path class="wire-path" id="w2-oled-gnd" d="M 330 180 C 400 180, 480 85, 560 85" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="4,2"/>
+                            <path class="wire-path" id="w2-oled-scl" d="M 330 220 C 420 220, 480 135, 560 135" fill="none" stroke="#2ed573" stroke-width="2.5"/>
+                            <path class="wire-path" id="w2-oled-sda" d="M 330 260 C 420 260, 480 160, 560 160" fill="none" stroke="#1e90ff" stroke-width="2.5"/>
+                            <path class="wire-path" id="w2-tx-vcc" d="M 330 320 C 420 320, 480 365, 560 365" fill="none" stroke="#ff6b81" stroke-width="2.5"/>
+                            <path class="wire-path" id="w2-tx-data" d="M 330 360 C 420 360, 480 330, 560 330" fill="none" stroke="#ff7f50" stroke-width="2.5"/>
+                            <path class="wire-path" id="w2-tx-gnd" d="M 330 180 C 370 180, 390 400, 560 400" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="4,2"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Wiring Details -->
+                <div class="details-card">
+                    <h3>Node 2 Interconnect Spec</h3>
+                    <table class="pin-table">
+                        <thead>
+                            <tr>
+                                <th>MODULE PIN</th>
+                                <th>ESP32 PIN</th>
+                                <th>FUNCTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr onmouseenter="highlightWire('w2-oled-vcc')" onmouseleave="unhighlightWire('w2-oled-vcc')">
+                                <td><span class="pin-color-dot" style="background:#ff4757"></span>OLED VCC</td>
+                                <td><span class="pin-badge">3V3</span></td>
+                                <td>3.3V Power</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w2-oled-gnd')" onmouseleave="unhighlightWire('w2-oled-gnd')">
+                                <td><span class="pin-color-dot" style="background:#64748b"></span>OLED GND</td>
+                                <td><span class="pin-badge">GND</span></td>
+                                <td>Ground</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w2-oled-scl')" onmouseleave="unhighlightWire('w2-oled-scl')">
+                                <td><span class="pin-color-dot" style="background:#2ed573"></span>OLED SCL</td>
+                                <td><span class="pin-badge">GPIO 22</span></td>
+                                <td>I2C Clock</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w2-oled-sda')" onmouseleave="unhighlightWire('w2-oled-sda')">
+                                <td><span class="pin-color-dot" style="background:#1e90ff"></span>OLED SDA</td>
+                                <td><span class="pin-badge">GPIO 21</span></td>
+                                <td>I2C Data</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w2-tx-vcc')" onmouseleave="unhighlightWire('w2-tx-vcc')">
+                                <td><span class="pin-color-dot" style="background:#ff6b81"></span>FS1000A VCC</td>
+                                <td><span class="pin-badge">VIN (5V)</span></td>
+                                <td>5V RF Power Rail</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w2-tx-data')" onmouseleave="unhighlightWire('w2-tx-data')">
+                                <td><span class="pin-color-dot" style="background:#ff7f50"></span>FS1000A DATA</td>
+                                <td><span class="pin-badge">GPIO 17</span></td>
+                                <td>RadioHead ASK Modulation</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w2-tx-gnd')" onmouseleave="unhighlightWire('w2-tx-gnd')">
+                                <td><span class="pin-color-dot" style="background:#64748b"></span>FS1000A GND</td>
+                                <td><span class="pin-badge">GND</span></td>
+                                <td>Ground</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="tech-note">
+                        <strong>Why 5V for FS1000A?</strong>
+                        <p>The FS1000A transmitter module works down to 3.3V, but its RF output power increases quadratically with voltage. Supplying 5V from the ESP32 <code>VIN</code> pin ensures maximum transmission punch to bridge 433 MHz packets through laboratory noise.</p>
+                    </div>
+
+                    <div class="tech-note">
+                        <strong>Quarter-Wavelength Antenna:</strong>
+                        <p>Calculate: λ = c / f = 3 × 10⁸ / 433.92 × 10⁶ ≈ 69 cm. Quarter wavelength: 69 / 4 = <strong>17.3 cm</strong>. Solder a straight 17.3 cm copper wire to the <code>ANT</code> solder pad for clean resonance.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 3: NODE 3 - AIR-GAP SUBSYSTEM & RELAY ACTUATION          -->
+        <!-- ============================================================ -->
+        <div class="diagram-section" id="tab-node3">
+            <div class="schematic-grid">
+                <!-- SVG Schematic -->
+                <div class="canvas-card">
+                    <div class="canvas-header">
+                        <div class="canvas-title">
+                            <span>Node 3 Circuit Schematic: Arduino Uno, 433MHz RX &amp; Air-Gap Relay</span>
+                            <span class="canvas-pill">Hardware-in-the-Loop Isolation</span>
+                        </div>
+                    </div>
+                    <div class="svg-container">
+                        <svg viewBox="0 0 880 500" xmlns="http://www.w3.org/2000/svg">
+                            <pattern id="grid3" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <circle cx="10" cy="10" r="1" fill="#172235" />
+                            </pattern>
+                            <rect width="880" height="500" fill="url(#grid3)" rx="6"/>
+
+                            <!-- Arduino Uno (Center) -->
+                            <rect x="280" y="70" width="300" height="360" rx="10" fill="#003b46" stroke="#07575b" stroke-width="2"/>
+                            <rect x="360" y="200" width="140" height="40" rx="4" fill="#121824" stroke="#25354e"/>
+                            <text x="430" y="225" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10" font-weight="700" text-anchor="middle">ATmega328P</text>
+                            
+                            <text x="430" y="110" fill="#e6edf3" font-family="JetBrains Mono" font-size="13" font-weight="700" text-anchor="middle">Arduino Uno R3</text>
+                            <text x="430" y="128" fill="#66a5ad" font-family="JetBrains Mono" font-size="10" text-anchor="middle">NODE 3: SUB-GHZ TELEMETRY GATEWAY</text>
+
+                            <!-- Uno Left Pins -->
+                            <circle cx="280" cy="160" r="6" fill="#ff4757" id="uno-5v"/>
+                            <text x="295" y="164" fill="#ff4757" font-family="JetBrains Mono" font-size="11" font-weight="700">5V</text>
+
+                            <circle cx="280" cy="200" r="6" fill="#94a3b8" id="uno-gnd"/>
+                            <text x="295" y="204" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="700">GND</text>
+
+                            <!-- Uno Right Digital Pins -->
+                            <circle cx="580" cy="160" r="6" fill="#ff7f50" id="uno-d11"/>
+                            <text x="565" y="164" fill="#ff7f50" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">Pin 11 (RX)</text>
+
+                            <circle cx="580" cy="240" r="6" fill="#ff4757" id="uno-d7"/>
+                            <text x="565" y="244" fill="#ff4757" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="end">Pin 7 (Relay)</text>
+
+                            <!-- XY-MK-5V RX (Left) -->
+                            <rect x="40" y="100" width="180" height="260" rx="8" fill="#15241b" stroke="#255234" stroke-width="2"/>
+                            <circle cx="130" cy="150" r="14" fill="#0b1710" stroke="#3fb950" stroke-width="2"/>
+                            <text x="130" y="185" fill="#3fb950" font-family="JetBrains Mono" font-size="10" font-weight="700" text-anchor="middle">XY-MK-5V RX</text>
+                            <text x="130" y="200" fill="#64748b" font-family="JetBrains Mono" font-size="8" text-anchor="middle">SUPER-REGEN 433MHz</text>
+
+                            <path d="M 50 120 L 25 120 L 25 80" fill="none" stroke="#d29922" stroke-width="2.5"/>
+                            <text x="25" y="70" fill="#eccc68" font-family="JetBrains Mono" font-size="8" text-anchor="middle">17.3cm ANT</text>
+
+                            <circle cx="220" cy="240" r="5" fill="#ff4757"/>
+                            <text x="210" y="244" fill="#ff4757" font-family="JetBrains Mono" font-size="9" text-anchor="end">VCC</text>
+
+                            <circle cx="220" cy="270" r="5" fill="#ff7f50"/>
+                            <text x="210" y="274" fill="#ff7f50" font-family="JetBrains Mono" font-size="9" text-anchor="end">DATA</text>
+
+                            <circle cx="220" cy="300" r="5" fill="#94a3b8"/>
+                            <text x="210" y="304" fill="#94a3b8" font-family="JetBrains Mono" font-size="9" text-anchor="end">GND</text>
+
+                            <!-- 5V Relay Module (Right) -->
+                            <rect x="660" y="100" width="180" height="280" rx="8" fill="#0a1829" stroke="#1f4470" stroke-width="2"/>
+                            <rect x="680" y="130" width="140" height="90" rx="4" fill="#1f6feb" stroke="#388bfd" stroke-width="1.5"/>
+                            <text x="750" y="165" fill="#ffffff" font-family="JetBrains Mono" font-size="10" font-weight="700" text-anchor="middle">5V RELAY COIL</text>
+                            <text x="750" y="182" fill="#c9d1d9" font-family="JetBrains Mono" font-size="8" text-anchor="middle">SRD-05VDC-SL-C</text>
+
+                            <circle cx="660" cy="260" r="5" fill="#ff4757"/>
+                            <text x="675" y="264" fill="#ff4757" font-family="JetBrains Mono" font-size="9">VCC (5V)</text>
+
+                            <circle cx="660" cy="290" r="5" fill="#ff4757"/>
+                            <text x="675" y="294" fill="#ff4757" font-family="JetBrains Mono" font-size="9">IN (Pin 7)</text>
+
+                            <circle cx="660" cy="320" r="5" fill="#94a3b8"/>
+                            <text x="675" y="324" fill="#94a3b8" font-family="JetBrains Mono" font-size="9">GND</text>
+
+                            <rect x="800" y="260" width="30" height="70" rx="3" fill="#334155"/>
+                            <text x="790" y="280" fill="#2ed573" font-family="JetBrains Mono" font-size="9" font-weight="700" text-anchor="end">COM</text>
+                            <text x="790" y="315" fill="#2ed573" font-family="JetBrains Mono" font-size="9" font-weight="700" text-anchor="end">NC (Closed)</text>
+
+                            <!-- Wires -->
+                            <path class="wire-path" id="w3-rx-vcc" d="M 280 160 C 250 160, 240 240, 220 240" fill="none" stroke="#ff4757" stroke-width="2.5"/>
+                            <path class="wire-path" id="w3-rx-gnd" d="M 280 200 C 250 200, 240 300, 220 300" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="4,2"/>
+                            <path class="wire-path" id="w3-rx-data" d="M 220 270 C 250 350, 520 280, 580 160" fill="none" stroke="#ff7f50" stroke-width="2.5"/>
+                            <path class="wire-path" id="w3-relay-in" d="M 580 240 C 620 240, 640 290, 660 290" fill="none" stroke="#ff4757" stroke-width="2.5"/>
+                            <path class="wire-path" id="w3-relay-vcc" d="M 280 160 C 270 410, 630 400, 660 260" fill="none" stroke="#ff4757" stroke-width="2.5"/>
+                            <path class="wire-path" id="w3-relay-gnd" d="M 280 200 C 260 430, 640 430, 660 320" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="4,2"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Wiring Details -->
+                <div class="details-card">
+                    <h3>Node 3 Interconnect Spec</h3>
+                    <table class="pin-table">
+                        <thead>
+                            <tr>
+                                <th>MODULE PIN</th>
+                                <th>ARDUINO PIN</th>
+                                <th>FUNCTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr onmouseenter="highlightWire('w3-rx-vcc')" onmouseleave="unhighlightWire('w3-rx-vcc')">
+                                <td><span class="pin-color-dot" style="background:#ff4757"></span>XY-MK-5V VCC</td>
+                                <td><span class="pin-badge">5V</span></td>
+                                <td>5V Power</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w3-rx-gnd')" onmouseleave="unhighlightWire('w3-rx-gnd')">
+                                <td><span class="pin-color-dot" style="background:#64748b"></span>XY-MK-5V GND</td>
+                                <td><span class="pin-badge">GND</span></td>
+                                <td>Ground</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w3-rx-data')" onmouseleave="unhighlightWire('w3-rx-data')">
+                                <td><span class="pin-color-dot" style="background:#ff7f50"></span>XY-MK-5V DATA</td>
+                                <td><span class="pin-badge">Digital 11</span></td>
+                                <td>RadioHead RX Interrupt Capture</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w3-relay-vcc')" onmouseleave="unhighlightWire('w3-relay-vcc')">
+                                <td><span class="pin-color-dot" style="background:#ff4757"></span>Relay VCC</td>
+                                <td><span class="pin-badge">5V</span></td>
+                                <td>5V Coil Supply</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w3-relay-gnd')" onmouseleave="unhighlightWire('w3-relay-gnd')">
+                                <td><span class="pin-color-dot" style="background:#64748b"></span>Relay GND</td>
+                                <td><span class="pin-badge">GND</span></td>
+                                <td>Ground</td>
+                            </tr>
+                            <tr onmouseenter="highlightWire('w3-relay-in')" onmouseleave="unhighlightWire('w3-relay-in')">
+                                <td><span class="pin-color-dot" style="background:#ff4757"></span>Relay IN</td>
+                                <td><span class="pin-badge">Digital 7</span></td>
+                                <td>Relay Coil Actuation</td>
+                            </tr>
+                            <tr>
+                                <td><span class="pin-color-dot" style="background:#2ed573"></span>Relay Terminals</td>
+                                <td><span class="pin-badge">COM &amp; NC</span></td>
+                                <td>Hardware Data Bus / Failover Signal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="tech-note">
+                        <strong>Why Digital Pin 11 for RadioHead?</strong>
+                        <p>On ATmega328P Arduino boards, the RadioHead <code>RH_ASK</code> driver defaults to Digital Pin 11 because it uses the internal 16-bit Timer 1 for jitter-free Manchester bit sampling. Do not change this pin without reconfiguring the timer prescalers.</p>
+                    </div>
+
+                    <div class="tech-note">
+                        <strong>Normally Closed (NC) Air-Gap Mechanics:</strong>
+                        <p>Under nominal conditions, the relay coil is unpowered; current flows freely across COM and NC. When the Arduino decodes the authenticated 8-byte 433MHz failover frame, it drives Digital Pin 7 HIGH, switching the physical telemetry channel to the 433 MHz RF modem in <strong>&lt; 15 ms</strong>, ensuring unbroken mission-critical data transmission.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 4: SYSTEM TOPOLOGY OVERVIEW                              -->
+        <!-- ============================================================ -->
+        <div class="diagram-section" id="tab-system">
+            <div class="topology-card">
+                <div class="canvas-header">
+                    <div class="canvas-title">
+                        <span>End-to-End Cyber-Physical Hardware-in-the-Loop Architecture</span>
+                        <span class="canvas-pill">Multi-Band Failover Flow</span>
+                    </div>
+                </div>
+
+                <div class="svg-container">
+                    <svg viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg">
+                        <pattern id="grid4" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <circle cx="10" cy="10" r="1" fill="#172235" />
+                        </pattern>
+                        <rect width="960" height="380" fill="url(#grid4)" rx="6"/>
+
+                        <!-- EDGE AGENT SERVER (TOP) -->
+                        <rect x="330" y="30" width="300" height="90" rx="8" fill="#10192a" stroke="#2563eb" stroke-width="2"/>
+                        <text x="480" y="60" fill="#60a5fa" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="middle">EDGE SECOPS REASONING AGENT</text>
+                        <text x="480" y="80" fill="#94a3b8" font-family="JetBrains Mono" font-size="9" text-anchor="middle">Shannon Entropy • Velocity Detection • Cryptographic Logging</text>
+                        <text x="480" y="100" fill="#34d399" font-family="JetBrains Mono" font-size="9" text-anchor="middle">Web Dashboard: http://localhost:8500</text>
+
+                        <!-- NODE 1 (BOTTOM LEFT) -->
+                        <rect x="50" y="200" width="240" height="130" rx="8" fill="#0f172a" stroke="#00e5ff" stroke-width="2"/>
+                        <text x="170" y="230" fill="#00e5ff" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="middle">NODE 1: SENTINEL</text>
+                        <text x="170" y="250" fill="#e2e8f0" font-family="JetBrains Mono" font-size="9" text-anchor="middle">ESP32 + NRF24L01+</text>
+                        <text x="170" y="275" fill="#94a3b8" font-family="JetBrains Mono" font-size="8" text-anchor="middle">• Promiscuous 802.11 sniffer</text>
+                        <text x="170" y="295" fill="#94a3b8" font-family="JetBrains Mono" font-size="8" text-anchor="middle">• 125-Ch RPD energy sweep</text>
+
+                        <!-- NODE 2 (BOTTOM CENTER) -->
+                        <rect x="360" y="200" width="240" height="130" rx="8" fill="#0f172a" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="480" y="230" fill="#f59e0b" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="middle">NODE 2: MISSION NODE</text>
+                        <text x="480" y="250" fill="#e2e8f0" font-family="JetBrains Mono" font-size="9" text-anchor="middle">ESP32 + OLED + FS1000A</text>
+                        <text x="480" y="275" fill="#94a3b8" font-family="JetBrains Mono" font-size="8" text-anchor="middle">• Nominal 2.4GHz Wi-Fi link</text>
+                        <text x="480" y="295" fill="#94a3b8" font-family="JetBrains Mono" font-size="8" text-anchor="middle">• 433 MHz failover burst TX</text>
+
+                        <!-- NODE 3 (BOTTOM RIGHT) -->
+                        <rect x="670" y="200" width="240" height="130" rx="8" fill="#0f172a" stroke="#ef4444" stroke-width="2"/>
+                        <text x="790" y="230" fill="#ef4444" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="middle">NODE 3: SUB-GHZ TELEMETRY GATEWAY</text>
+                        <text x="790" y="250" fill="#e2e8f0" font-family="JetBrains Mono" font-size="9" text-anchor="middle">Arduino Uno + Relay + RX</text>
+                        <text x="790" y="275" fill="#94a3b8" font-family="JetBrains Mono" font-size="8" text-anchor="middle">• XY-MK-5V 433MHz Receiver</text>
+                        <text x="790" y="295" fill="#94a3b8" font-family="JetBrains Mono" font-size="8" text-anchor="middle">• 5V Relay galvanic isolation</text>
+
+                        <!-- FLOW ARROWS -->
+                        <path d="M 210 200 L 370 120" fill="none" stroke="#00e5ff" stroke-width="2"/>
+                        <text x="260" y="150" fill="#00e5ff" font-family="JetBrains Mono" font-size="8" font-weight="700">UART 921,600 baud</text>
+
+                        <path d="M 600 265 L 670 265" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4"/>
+                        <text x="635" y="255" fill="#f59e0b" font-family="JetBrains Mono" font-size="8" font-weight="700" text-anchor="middle">433 MHz RF</text>
+
+                        <path d="M 480 370 L 480 330" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+                        <text x="480" y="365" fill="#ef4444" font-family="JetBrains Mono" font-size="8" font-weight="700" text-anchor="middle">⚡ 802.11 DEAUTH ATTACK</text>
+                    </svg>
+                </div>
+
+                <div class="step-cards-grid">
+                    <div class="step-card">
+                        <span class="step-num">STAGE 1</span>
+                        <h4>Passive Layer-1/2 Telemetry</h4>
+                        <p>Node 1 sniffs live 802.11 management frames while performing a 125-channel 2.4 GHz carrier sweep every 200ms. It streams structured JSON telemetry over serial to the edge server at 921600 baud.</p>
+                    </div>
+                    <div class="step-card">
+                        <span class="step-num">STAGE 2</span>
+                        <h4>Agentic Triage &amp; Entropy</h4>
+                        <p>The SecOps Agent computes Shannon Spectral Entropy across the 125 bins and measures deauth frame velocity. It suppresses false alarms caused by benign Bluetooth audio and verifies real attacks.</p>
+                    </div>
+                    <div class="step-card">
+                        <span class="step-num">STAGE 3</span>
+                        <h4>Sub-GHz Snap &amp; Air-Gap</h4>
+                        <p>Upon verifying an attack, the Agent switches telemetry to the 433 MHz survival link and dispatches the authenticated failover burst. Node 3 verifies the CRC-16 and instantly trips the physical relay.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 5: MASTER WIRING & VOLTAGE MATRIX                        -->
+        <!-- ============================================================ -->
+        <div class="diagram-section" id="tab-matrix">
+            <div class="canvas-card">
+                <div class="canvas-header">
+                    <div class="canvas-title">
+                        <span>Master Interconnect, Pinout &amp; Voltage Quick-Reference Matrix</span>
+                        <span class="canvas-pill">Complete BOM Checklist</span>
+                    </div>
+                </div>
+
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>NODE SUBSYSTEM</th>
+                            <th>PERIPHERAL MODULE</th>
+                            <th>MODULE PIN</th>
+                            <th>MCU TARGET PIN</th>
+                            <th>BUS / PROTOCOL</th>
+                            <th>VOLTAGE</th>
+                            <th>CRITICAL NOTES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="7" style="color:var(--accent-cyan); font-weight:700;">Node 1: Sentinel<br>(ESP32 #1)</td>
+                            <td rowspan="7">NRF24L01+<br>(2.4GHz RF Sweeper)</td>
+                            <td>VCC (Pin 2)</td>
+                            <td>ESP32 3V3</td>
+                            <td>Power</td>
+                            <td><strong style="color:var(--accent-red)">3.3V ONLY</strong></td>
+                            <td>Do NOT connect to 5V (destroys RF IC)</td>
+                        </tr>
+                        <tr>
+                            <td>GND (Pin 1)</td>
+                            <td>ESP32 GND</td>
+                            <td>Ground</td>
+                            <td>0V</td>
+                            <td>Common system ground</td>
+                        </tr>
+                        <tr>
+                            <td>CE (Pin 3)</td>
+                            <td>ESP32 GPIO 4</td>
+                            <td>GPIO Out</td>
+                            <td>3.3V Logic</td>
+                            <td>Active HIGH enables RX listen</td>
+                        </tr>
+                        <tr>
+                            <td>CSN (Pin 4)</td>
+                            <td>ESP32 GPIO 5</td>
+                            <td>SPI CS</td>
+                            <td>3.3V Logic</td>
+                            <td>Active LOW SPI select</td>
+                        </tr>
+                        <tr>
+                            <td>SCK (Pin 5)</td>
+                            <td>ESP32 GPIO 18</td>
+                            <td>VSPI SCK</td>
+                            <td>3.3V Logic</td>
+                            <td>Hardware SPI Clock (8 MHz)</td>
+                        </tr>
+                        <tr>
+                            <td>MOSI (Pin 6)</td>
+                            <td>ESP32 GPIO 23</td>
+                            <td>VSPI MOSI</td>
+                            <td>3.3V Logic</td>
+                            <td>Master Out Slave In data</td>
+                        </tr>
+                        <tr>
+                            <td>MISO (Pin 7)</td>
+                            <td>ESP32 GPIO 19</td>
+                            <td>VSPI MISO</td>
+                            <td>3.3V Logic</td>
+                            <td>Master In Slave Out data</td>
+                        </tr>
+
+                        <tr>
+                            <td rowspan="7" style="color:var(--accent-amber); font-weight:700;">Node 2: Mission Node<br>(ESP32 #2)</td>
+                            <td rowspan="4">0.96" SSD1306 OLED<br>(Status Display)</td>
+                            <td>VCC</td>
+                            <td>ESP32 3V3 or VIN</td>
+                            <td>Power</td>
+                            <td>3.3V / 5V</td>
+                            <td>Onboard LDO handles both</td>
+                        </tr>
+                        <tr>
+                            <td>GND</td>
+                            <td>ESP32 GND</td>
+                            <td>Ground</td>
+                            <td>0V</td>
+                            <td>Common ground</td>
+                        </tr>
+                        <tr>
+                            <td>SCL</td>
+                            <td>ESP32 GPIO 22</td>
+                            <td>I2C SCL</td>
+                            <td>3.3V Logic</td>
+                            <td>Hardware I2C Clock (0x3C)</td>
+                        </tr>
+                        <tr>
+                            <td>SDA</td>
+                            <td>ESP32 GPIO 21</td>
+                            <td>I2C SDA</td>
+                            <td>3.3V Logic</td>
+                            <td>Hardware I2C Data (0x3C)</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3">FS1000A 433MHz TX<br>(Failover Burst)</td>
+                            <td>VCC</td>
+                            <td>ESP32 VIN</td>
+                            <td>Power</td>
+                            <td><strong style="color:var(--accent-green)">5V Rail</strong></td>
+                            <td>Connect to VIN for maximum RF range</td>
+                        </tr>
+                        <tr>
+                            <td>GND</td>
+                            <td>ESP32 GND</td>
+                            <td>Ground</td>
+                            <td>0V</td>
+                            <td>Common ground</td>
+                        </tr>
+                        <tr>
+                            <td>DATA</td>
+                            <td>ESP32 GPIO 17</td>
+                            <td>1-Wire ASK</td>
+                            <td>3.3V Logic</td>
+                            <td>RadioHead RH_ASK modulation pin</td>
+                        </tr>
+
+                        <tr>
+                            <td rowspan="6" style="color:var(--accent-red); font-weight:700;">Node 3: Sub-GHz Telemetry Gateway<br>(Arduino Uno R3)</td>
+                            <td rowspan="3">XY-MK-5V 433MHz RX<br>(Failover Receiver)</td>
+                            <td>VCC</td>
+                            <td>Arduino 5V</td>
+                            <td>Power</td>
+                            <td>5V Regulated</td>
+                            <td>Power from Arduino 5V pin</td>
+                        </tr>
+                        <tr>
+                            <td>GND</td>
+                            <td>Arduino GND</td>
+                            <td>Ground</td>
+                            <td>0V</td>
+                            <td>Common ground</td>
+                        </tr>
+                        <tr>
+                            <td>DATA</td>
+                            <td>Arduino Pin 11</td>
+                            <td>RH_ASK RX</td>
+                            <td>5V Logic</td>
+                            <td>Timer 1 capture pin (do not reassign)</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3">5V 1-Ch Relay Module<br>(Data Channel Bus Switch)</td>
+                            <td>VCC</td>
+                            <td>Arduino 5V</td>
+                            <td>Power</td>
+                            <td>5V Regulated</td>
+                            <td>Relay coil requires stable 5V</td>
+                        </tr>
+                        <tr>
+                            <td>GND</td>
+                            <td>Arduino GND</td>
+                            <td>Ground</td>
+                            <td>0V</td>
+                            <td>Common ground</td>
+                        </tr>
+                        <tr>
+                            <td>IN</td>
+                            <td>Arduino Pin 7</td>
+                            <td>GPIO Out</td>
+                            <td>5V Logic</td>
+                            <td>Drives HIGH upon authenticated frame</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <!-- ============================================================ -->
+        <!-- TAB 6: FIRMWARE FLASHING & BENCH DEPLOYMENT GUIDE            -->
+        <!-- ============================================================ -->
+        <div class="diagram-section" id="tab-flashing">
+            <div class="topology-card">
+                <div class="canvas-header">
+                    <div class="canvas-title">
+                        <span>Complete Firmware Deployment &amp; Flashing Guide</span>
+                        <span class="canvas-pill">Zero-Fail Bench Procedures</span>
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Flashing Cards Grid -->
+                <div class="step-cards-grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 16px;">
+                    <!-- NODE 1 SENTINEL -->
+                    <div class="step-card" style="border-top: 3px solid var(--accent-cyan);">
+                        <span class="step-num" style="background:#0b2636; color:var(--accent-cyan);">STEP 1: NODE 1</span>
+                        <h4>Flash Spectrum Sentinel (ESP32 #1)</h4>
+                        <p style="margin-bottom: 12px;">Promiscuous Layer-2 frame sniffer &amp; 125-channel NRF24L01+ carrier sweeper.</p>
+                        
+                        <div style="background:#080c14; padding:10px; border-radius:6px; font-family:var(--font-mono); font-size:0.75rem; border:1px solid #162033; margin-bottom:10px;">
+                            <span style="color:#64748b;"># Plug in ESP32 #1 via USB:</span><br>
+                            <span style="color:var(--accent-cyan);">pio run -d firmware/sentinel_esp32 -t upload</span>
+                        </div>
+
+                        <p style="font-size:0.75rem; color:#94a3b8;"><strong>Verify Serial (921,600 baud):</strong></p>
+                        <div style="background:#080c14; padding:8px 10px; border-radius:4px; font-family:var(--font-mono); font-size:0.72rem; color:#34d399; margin-top:4px;">
+                            pio device monitor -d firmware/sentinel_esp32 -b 921600
+                        </div>
+                        <div style="font-size:0.7rem; color:#64748b; margin-top:6px;">
+                            Expected: <code>{"node":"SENTINEL","status":"ONLINE","nrf_present":true}</code>
+                        </div>
+                    </div>
+
+                    <!-- NODE 2 MISSION NODE -->
+                    <div class="step-card" style="border-top: 3px solid var(--accent-amber);">
+                        <span class="step-num" style="background:#2b200b; color:var(--accent-amber);">STEP 2: NODE 2</span>
+                        <h4>Flash Mission Node (ESP32 #2)</h4>
+                        <p style="margin-bottom: 12px;">Primary telemetry transmitter, SSD1306 OLED, &amp; 433 MHz failover modulator.</p>
+                        
+                        <div style="background:#080c14; padding:10px; border-radius:6px; font-family:var(--font-mono); font-size:0.75rem; border:1px solid #162033; margin-bottom:10px;">
+                            <span style="color:#64748b;"># Plug in ESP32 #2 via USB:</span><br>
+                            <span style="color:var(--accent-amber);">pio run -d firmware/mission_node_esp32 -t upload</span>
+                        </div>
+
+                        <p style="font-size:0.75rem; color:#94a3b8;"><strong>Verify Serial (115,200 baud):</strong></p>
+                        <div style="background:#080c14; padding:8px 10px; border-radius:4px; font-family:var(--font-mono); font-size:0.72rem; color:#34d399; margin-top:4px;">
+                            pio device monitor -d firmware/mission_node_esp32 -b 115200
+                        </div>
+                        <div style="font-size:0.7rem; color:#64748b; margin-top:6px;">
+                            Expected OLED: <code>LINK: 2.4GHz [OK] // OOB: 433MHz STANDBY</code>
+                        </div>
+                    </div>
+
+                    <!-- NODE 3 AIR-GAP GATEWAY -->
+                    <div class="step-card" style="border-top: 3px solid var(--accent-red);">
+                        <span class="step-num" style="background:#361114; color:var(--accent-red);">STEP 3: NODE 3</span>
+                        <h4>Flash Sub-GHz Gateway (Arduino Uno)</h4>
+                        <p style="margin-bottom: 12px;">433 MHz RadioHead receiver &amp; hardware channel failover relay switch.</p>
+                        
+                        <div style="background:#080c14; padding:10px; border-radius:6px; font-family:var(--font-mono); font-size:0.75rem; border:1px solid #162033; margin-bottom:10px;">
+                            <span style="color:#64748b;"># Plug in Arduino Uno via USB:</span><br>
+                            <span style="color:var(--accent-red);">pio run -d firmware/airgap_node_arduino -t upload</span>
+                        </div>
+
+                        <p style="font-size:0.75rem; color:#94a3b8;"><strong>Verify Serial (115,200 baud):</strong></p>
+                        <div style="background:#080c14; padding:8px 10px; border-radius:4px; font-family:var(--font-mono); font-size:0.72rem; color:#34d399; margin-top:4px;">
+                            pio device monitor -d firmware/airgap_node_arduino -b 115200
+                        </div>
+                        <div style="font-size:0.7rem; color:#64748b; margin-top:6px;">
+                            Expected: <code>[AIRGAP_NODE] RadioHead 433MHz ASK Receiver Initialized</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deep-Dive Flashing Procedures & Edge-Case Troubleshooting -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:24px;">
+                    <!-- Fast Binary Flashing with esptool -->
+                    <div class="canvas-card">
+                        <h3 style="font-size:0.95rem; font-family:var(--font-mono); color:var(--accent-cyan); margin-bottom:12px;">
+                            ⚡ Direct Binary Flashing via esptool.py (Under 10 Seconds)
+                        </h3>
+                        <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:12px;">
+                            Pre-compiled production binaries already exist in this repository. You can bypass compilation entirely and blast the pre-built binaries directly into flash memory:
+                        </p>
+                        <div style="background:#060a10; padding:12px; border-radius:6px; font-family:var(--font-mono); font-size:0.75rem; border:1px solid #1a2538; overflow-x:auto;">
+                            <span style="color:#64748b;"># Flash Sentinel Binary Directly:</span><br>
+                            <span style="color:#388bfd;">esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 write_flash -z \<br>
+                            &nbsp;&nbsp;0x1000 firmware/sentinel_esp32/.pio/build/esp32dev/bootloader.bin \<br>
+                            &nbsp;&nbsp;0x8000 firmware/sentinel_esp32/.pio/build/esp32dev/partitions.bin \<br>
+                            &nbsp;&nbsp;0x10000 firmware/sentinel_esp32/.pio/build/esp32dev/firmware.bin</span>
+                        </div>
+                    </div>
+
+                    <!-- Edge-Cases & Hardware Troubleshooting -->
+                    <div class="canvas-card">
+                        <h3 style="font-size:0.95rem; font-family:var(--font-mono); color:var(--accent-amber); margin-bottom:12px;">
+                            🛠️ Critical Edge-Cases &amp; Hardware Troubleshooting
+                        </h3>
+                        <ul style="font-size:0.78rem; color:var(--text-dim); list-style:none; display:flex; flex-direction:column; gap:10px;">
+                            <li style="background:#0e1624; padding:8px 10px; border-radius:4px; border-left:3px solid var(--accent-amber);">
+                                <strong style="color:var(--text-main);">1. Linux / NixOS USB Port Permission Denied:</strong><br>
+                                If you see <code>[Errno 13] Permission denied: '/dev/ttyUSB0'</code>, grant immediate read/write access:
+                                <code style="color:var(--accent-cyan); display:block; margin-top:2px;">sudo chmod a+rw /dev/ttyUSB* /dev/ttyACM*</code>
+                            </li>
+                            <li style="background:#0e1624; padding:8px 10px; border-radius:4px; border-left:3px solid var(--accent-amber);">
+                                <strong style="color:var(--text-main);">2. The ESP32 "BOOT" Button Trick:</strong><br>
+                                If upload halts at <code>Connecting........_____.....</code>, press and <strong>hold down the physical BOOT (IO0) button</strong> on the ESP32 until the upload starts (<code>Writing at 0x00010000...</code>), then release.
+                            </li>
+                            <li style="background:#0e1624; padding:8px 10px; border-radius:4px; border-left:3px solid var(--accent-amber);">
+                                <strong style="color:var(--text-main);">3. NRF24 Carrier Detector Floating Check:</strong><br>
+                                If Sentinel reports <code>nrf_present: false</code>, verify NRF24 pin 2 is on <strong>3.3V</strong> (not 5V), check GND, and push a 10µF capacitor across the module rails.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <span>GHOST-SPECTRUM // SEC-CPS-2026</span>
+            <span>Tri-Node Distributed Wireless Hardware-in-the-Loop Framework</span>
+            <span>Generated from Product Requirements Specification</span>
+        </footer>
+    </div>
+
+    <script>
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.diagram-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            const target = document.getElementById(tabId);
+            if (target) target.classList.add('active');
+            if (btn) btn.classList.add('active');
+        }
+
+        function highlightWire(wireId) {
+            const wire = document.getElementById(wireId);
+            if (wire) {
+                wire.classList.add('highlighted');
+            }
+        }
+
+        function unhighlightWire(wireId) {
+            const wire = document.getElementById(wireId);
+            if (wire) {
+                wire.classList.remove('highlighted');
+            }
+        }
+    </script>
+</body>
+</html>

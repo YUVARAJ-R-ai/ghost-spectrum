@@ -1,112 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KINESIS — Continuous Electromagnetic Motion & CSI Suite</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST-SPECTRUM // Edge-AI SecOps Mission Control</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="header">
-      <div class="logo-group">
-        <div class="logo-badge">⚡ KINESIS</div>
-        <div class="logo-sub">Kinematic Inference through Non-contact Electromagnetic Sensing</div>
-      </div>
-      <div class="controls-group">
-        <div class="mode-selector">
-          <button id="btn-hw" class="mode-btn active" onclick="setMode('hardware')">🔌 Live Hardware</button>
-          <button id="btn-sim" class="mode-btn" onclick="setMode('simulator')">🪐 Physics Simulator</button>
-        </div>
-        <div class="status-pill" id="status-pill">
-          <span class="status-dot"></span>
-          <span id="status-text">Connecting...</span>
-        </div>
-      </div>
-    </header>
+    <div class="app-container">
+        <!-- Top Navigation / Status Header -->
+        <header class="app-header">
+            <div class="brand-section">
+                <div class="logo-pulse"></div>
+                <div class="brand-titles">
+                    <h1>GHOST-SPECTRUM <span class="tag">SEC-CPS-2026</span></h1>
+                    <p class="subtitle">AUTONOMOUS RF INTRUSION DETECTION &amp; SUB-GHZ AIR-GAP RESILIENCE FRAMEWORK</p>
+                </div>
+            </div>
 
-    <!-- Alert Banners -->
-    <div id="hw-disconnect-banner" class="alert-banner hidden">
-      <span class="banner-icon">⚠️</span>
-      <span class="banner-text"><strong>ESP32 Disconnected:</strong> No device detected on <code>/dev/ttyUSB1</code>. Plug in your ESP32 receiver board, or switch to <strong>🪐 Physics Simulator</strong> above to test in software.</span>
+            <div class="header-badges">
+                <div class="status-badge" id="badge-agent-state">
+                    <span class="dot"></span>
+                    <span class="label">AGENT:</span>
+                    <span class="val" id="val-agent-state">INITIALIZING</span>
+                </div>
+                <div class="status-badge" id="badge-primary-link">
+                    <span class="dot"></span>
+                    <span class="label">2.4 GHz LINK:</span>
+                    <span class="val" id="val-primary-link">NOMINAL</span>
+                </div>
+                <div class="status-badge" id="badge-oob-link">
+                    <span class="dot"></span>
+                    <span class="label">433 MHz OOB:</span>
+                    <span class="val" id="val-oob-link">STANDBY</span>
+                </div>
+                <div class="status-badge" id="badge-hw-port">
+                    <span class="dot"></span>
+                    <span class="label">NODE LINK:</span>
+                    <span class="val" id="val-hw-port">SCANNING</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Interactive Mission Control Toolbar -->
+        
+        <!-- Live Mission Telemetry Readout (The Critical Protected Payload) -->
+        <section class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent-cyan); background: #0c121d;">
+            <div class="card-header" style="margin-bottom: 8px;">
+                <div class="card-title">
+                    <span class="card-num" style="background:#0b2f3a; color:var(--accent-cyan);">LIVE PAYLOAD</span>
+                    <h2>Critical Mission Telemetry (Nuclear / Chemical Facility Core Monitor)</h2>
+                </div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim);">
+                    TRANSMISSION ROUTE: <span id="telemetry-route-badge" style="color:var(--accent-cyan); font-weight:700;">2.4 GHz Wi-Fi (Primary)</span>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; font-family:var(--font-mono);">
+                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
+                    <div style="font-size:0.65rem; color:var(--text-dim);">CORE TEMPERATURE</div>
+                    <div id="payload-temp" style="font-size:1.25rem; font-weight:800; color:#388bfd;">36.4 °C</div>
+                    <div style="font-size:0.6rem; color:#3fb950;">● Nominal Baseline</div>
+                </div>
+                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
+                    <div style="font-size:0.65rem; color:var(--text-dim);">RADIATION LEVEL</div>
+                    <div id="payload-rad" style="font-size:1.25rem; font-weight:800; color:#39c5cf;">0.14 µSv/h</div>
+                    <div style="font-size:0.6rem; color:#3fb950;">● Safe Zone Threshold</div>
+                </div>
+                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
+                    <div style="font-size:0.65rem; color:var(--text-dim);">CONTAINMENT PRESSURE</div>
+                    <div id="payload-psi" style="font-size:1.25rem; font-weight:800; color:#e6edf3;">101.3 kPa</div>
+                    <div style="font-size:0.6rem; color:#3fb950;">● Atmospheric Lock</div>
+                </div>
+                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
+                    <div style="font-size:0.65rem; color:var(--text-dim);">SURVIVAL PDR (DATA CONTINUITY)</div>
+                    <div id="payload-pdr" style="font-size:1.25rem; font-weight:800; color:#3fb950;">100.0 %</div>
+                    <div id="payload-loss" style="font-size:0.6rem; color:var(--text-dim);">0 Packets Lost</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="control-toolbar">
+            <div class="toolbar-title">HIL ATTACK INJECTION &amp; MITIGATION BENCH:</div>
+            <div class="button-group">
+                <button class="btn btn-benign" id="btn-sim-benign">
+                    <span class="icon">📶</span> Benign Bluetooth (2.4GHz)
+                </button>
+                <button class="btn btn-attack" id="btn-sim-deauth">
+                    <span class="icon">⚡</span> 802.11 Deauth Flood (>200 fps)
+                </button>
+                <button class="btn btn-jam" id="btn-sim-jam">
+                    <span class="icon">🚨</span> Broadband RF Jam (125-Ch)
+                </button>
+                <button class="btn btn-trip" id="btn-manual-trip">
+                    <span class="icon">🔌</span> Manual Radio Failover
+                </button>
+                <button class="btn btn-reset" id="btn-system-reset">
+                    <span class="icon">🔄</span> Reset to Nominal
+                </button>
+                <a href="/circuits" class="btn" style="background:#0f2738; color:#00e5ff; border:1px solid #1a516b; text-decoration:none;">
+                    <span class="icon">📐</span> Circuit Diagrams
+                </a>
+            </div>
+        </section>
+
+        <!-- Main Grid Panels -->
+        <main class="dashboard-grid">
+            <!-- PANEL A: 2.4 GHz RF Spectrum Waterfall -->
+            <div class="card panel-waterfall">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-num">PANEL A</span>
+                        <h2>2.4 GHz RF Spectrum Waterfall (125-Channel NRF24L01 Sweep)</h2>
+                    </div>
+                    <div class="card-metric" id="entropy-metric">
+                        <span class="metric-label">SHANNON ENTROPY H(X):</span>
+                        <span class="metric-value" id="val-entropy">0.000</span>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="waterfall-canvas" width="600" height="180"></canvas>
+                    <div class="freq-axis">
+                        <span>2400 MHz (Ch 0)</span>
+                        <span>2412 MHz (Wi-Fi 1)</span>
+                        <span>2437 MHz (Wi-Fi 6)</span>
+                        <span>2462 MHz (Wi-Fi 11)</span>
+                        <span>2525 MHz (Ch 124)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL B: 802.11 Frame Density & Velocity Gauges -->
+            <div class="card panel-gauges">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-num">PANEL B</span>
+                        <h2>802.11 Link-Layer Frame Velocity &amp; Dispersion</h2>
+                    </div>
+                    <div class="card-metric">
+                        <span class="metric-label">DEAUTH VELOCITY:</span>
+                        <span class="metric-value" id="val-velocity">0.0 fps</span>
+                    </div>
+                </div>
+                <div class="gauges-container">
+                    <div class="gauge-box">
+                        <div class="gauge-title">MANAGEMENT DEAUTH BURSTS</div>
+                        <div class="gauge-bar-wrapper">
+                            <div class="gauge-bar-fill" id="gauge-deauth-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="gauge-readout" id="deauth-fps-readout">0 fps (Threshold: 50)</div>
+                    </div>
+                    <div class="gauge-box">
+                        <div class="gauge-title">DATA FRAME TELEMETRY DENSITY</div>
+                        <div class="gauge-bar-wrapper">
+                            <div class="gauge-bar-fill gauge-data" id="gauge-data-bar" style="width: 45%;"></div>
+                        </div>
+                        <div class="gauge-readout" id="data-fps-readout">28 fps [Active Uplink]</div>
+                    </div>
+                    <div class="metric-mini-grid">
+                        <div class="mini-stat">
+                            <span class="k">TARGET BSSID</span>
+                            <span class="v" id="stat-bssid">--:--:--:--:--:--</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="k">MAC DISPERSION</span>
+                            <span class="v" id="stat-dispersion">1.00</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="k">ENERGY RATIO</span>
+                            <span class="v" id="stat-energy-ratio">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL C: Agent Chain-of-Thought Live Console -->
+            <div class="card panel-console">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-num">PANEL C</span>
+                        <h2>Autonomous SecOps Agent Chain-of-Thought Reasoning</h2>
+                    </div>
+                    <span class="pulse-indicator">LIVE REASONING</span>
+                </div>
+                <div class="terminal-body" id="cot-terminal">
+                    <div class="term-line info">[AGENT]: Initializing autonomous multi-layer radio resilience pipeline...</div>
+                    <div class="term-line info">[AGENT]: Promiscuous 802.11 Layer-2 frame filter active. Sliding window = 500 ms.</div>
+                    <div class="term-line ok">[AGENT]: Nominal RF spectrum detected. Entropy within baseline limits.</div>
+                </div>
+            </div>
+
+            <!-- PANEL D: Telemetry Continuity Graph -->
+            <div class="card panel-continuity">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-num">PANEL D</span>
+                        <h2>Telemetry Continuity: Primary 2.4 GHz vs. 433 MHz Survival OOB</h2>
+                    </div>
+                    <div class="card-metric">
+                        <span class="metric-label">PACKET DELIVERY (PDR):</span>
+                        <span class="metric-value highlight" id="stat-pdr">100.0%</span>
+                    </div>
+                </div>
+                <div class="continuity-chart-wrapper">
+                    <canvas id="continuity-canvas" width="600" height="150"></canvas>
+                    <div class="chart-legend">
+                        <span class="leg-item"><span class="legend-color wifi-color"></span> Primary Wi-Fi Telemetry</span>
+                        <span class="leg-item"><span class="legend-color subghz-color"></span> 433 MHz Sub-GHz Failover Telemetry</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL E: Digital Twin & Hardware State -->
+            <div class="card panel-digital-twin">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-num">PANEL E</span>
+                        <h2>Hardware-in-the-Loop Digital Twin (Physical Tri-Node State)</h2>
+                    </div>
+                </div>
+                <div class="twin-nodes-wrapper">
+                    <!-- Node 1: Sentinel -->
+                    <div class="twin-node" id="node-sentinel">
+                        <div class="node-header">
+                            <span class="node-id">NODE 1</span>
+                            <span class="node-name">ESP32 SENTINEL</span>
+                        </div>
+                        <div class="node-diagram">
+                            <div class="chip">ESP32-WROOM</div>
+                            <div class="sub-chip">NRF24L01+ (VSPI)</div>
+                        </div>
+                        <div class="node-status-line">
+                            <span>Promiscuous Sniffer:</span> <strong class="text-ok">ACTIVE</strong>
+                        </div>
+                    </div>
+
+                    <!-- Node 2: Mission Controller & OLED -->
+                    <div class="twin-node" id="node-mission">
+                        <div class="node-header">
+                            <span class="node-id">NODE 2</span>
+                            <span class="node-name">MISSION NODE</span>
+                        </div>
+                        <!-- Virtual OLED Screen Mirror -->
+                        <div class="oled-mirror" id="oled-mirror">
+                            <div class="oled-line-1" id="oled-line1">&gt;&gt; GHOST-SPECTRUM &lt;&lt;</div>
+                            <div class="oled-line-2" id="oled-line2">LINK: 2.4GHz [OK]</div>
+                            <div class="oled-line-3" id="oled-line3">OOB:  433MHz STANDBY</div>
+                            <div class="oled-line-4" id="oled-line4">PKT:  #0001</div>
+                        </div>
+                        <div class="node-status-line">
+                            <span>433MHz FS1000A:</span> <strong id="twin-fs1000-state">STANDBY</strong>
+                        </div>
+                    </div>
+
+                    <!-- Node 3: Air-Gap Relay Subsystem -->
+                    <div class="twin-node" id="node-airgap">
+                        <div class="node-header">
+                            <span class="node-id">NODE 3</span>
+                            <span class="node-name">SUB-GHZ GATEWAY</span>
+                        </div>
+                        <div class="relay-graphic" id="relay-visual">
+                            <div class="relay-coil">RELAY COIL</div>
+                            <div class="relay-contact closed" id="relay-contact-line">
+                                <span class="contact-label" id="contact-status-label">CLOSED (NC)</span>
+                            </div>
+                        </div>
+                        <div class="node-status-line">
+                            <span>Galvanic Contact:</span> <strong class="text-ok" id="relay-state-text">CLOSED (NOMINAL)</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <div id="sim-active-banner" class="alert-banner sim-banner hidden">
-      <span class="banner-icon">🧪</span>
-      <span class="banner-text"><strong>Physics Simulator Mode:</strong> You are currently in virtual simulation mode, not reading real hardware. Hand is stationary by default. Drag the yellow hand dot below in the Fresnel Desk to test Doppler motion.</span>
-    </div>
-
-    <!-- Main Grid -->
-    <main class="dashboard-grid">
-      <!-- Left Panel: Signal & Spectrum -->
-      <section class="card panel-signals">
-        <div class="card-header">
-          <h3>OFDM Subcarrier Perturbation Waterfall</h3>
-          <span class="tag" id="subcarrier-count">126 Subcarriers @ 100 Hz</span>
-        </div>
-        <div class="canvas-container waterfall-container">
-          <canvas id="waterfall-canvas"></canvas>
-        </div>
-
-        <div class="card-header mt-4">
-          <h3>Doppler Velocity Spectrum (DFS)</h3>
-          <span class="tag" id="velocity-val">0.00 m/s</span>
-        </div>
-        <div class="canvas-container doppler-container">
-          <canvas id="doppler-canvas"></canvas>
-        </div>
-      </section>
-
-      <!-- Right Panel: Interaction & Air Cursor -->
-      <section class="card panel-interaction">
-        <div class="card-header">
-          <h3>2D Air Cursor & Gesture Intent</h3>
-          <div class="gesture-badge" id="gesture-badge">STILL (95%)</div>
-        </div>
-
-        <!-- Air Cursor Canvas -->
-        <div class="canvas-container cursor-container">
-          <canvas id="cursor-canvas"></canvas>
-          <div class="canvas-overlay">
-            <button class="icon-btn" onclick="clearTrail()">Clear Trail</button>
-            <button class="icon-btn" id="btn-draw" onclick="toggleDrawing()">Air Draw: OFF</button>
-          </div>
-        </div>
-
-        <!-- Simulator Sandbox (Shown when in Simulator Mode) -->
-        <div id="sim-sandbox" class="sim-sandbox hidden">
-          <div class="card-header mt-2">
-            <h4>Fresnel Desk Simulation Sandbox</h4>
-            <span class="sub-tag">Drag hand below to test physics</span>
-          </div>
-          <div class="canvas-container sandbox-container">
-            <canvas id="sandbox-canvas"></canvas>
-          </div>
-        </div>
-
-        <!-- Metrics & Telemetry Bar -->
-        <div class="metrics-grid">
-          <div class="metric-box">
-            <span class="metric-label">Motion Energy (ΔCSI)</span>
-            <span class="metric-value" id="metric-energy">0.00</span>
-          </div>
-          <div class="metric-box">
-            <span class="metric-label">Radial Velocity</span>
-            <span class="metric-value" id="metric-vel">0.00 m/s</span>
-          </div>
-          <div class="metric-box">
-            <span class="metric-label">Stream Sequence</span>
-            <span class="metric-value" id="metric-seq">0</span>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script src="app.js"></script>
+    <script src="/static/app.js"></script>
 </body>
 </html>
