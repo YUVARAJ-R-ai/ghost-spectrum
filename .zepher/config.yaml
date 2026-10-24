@@ -1,0 +1,15 @@
+version: 1
+memory:
+  backend: markdown
+  semantic_search: false
+context:
+  max_size: auto
+integrations:
+  codebase_memory_mcp: auto
+  graphify: optional
+security:
+  secret_detection: true
+workflow:
+  require_plan_for_features: true
+  require_review: true
+  require_handoff: true
