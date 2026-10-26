@@ -38,3 +38,10 @@ wheels/
 
 # Incident test output (keep structure, ignore huge dynamic logs if needed)
 # server/incidents/*.json
+
+# Hotspot credentials
+firmware/*/include/secrets.h
+
+# Brainstorm mockups
+.superpowers/
+

@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> {} }:
 
 pkgs.mkShell {
-  name = "ghost-spectrum-env";
+  name = "link-doctor-env";
 
   buildInputs = with pkgs; [
     platformio
@@ -10,7 +10,7 @@ pkgs.mkShell {
     python3
     python3Packages.pyserial
     python3Packages.numpy
-    python3Packages.scipy
+    python3Packages.scikit-learn
     python3Packages.fastapi
     python3Packages.uvicorn
     python3Packages.websockets
@@ -18,8 +18,8 @@ pkgs.mkShell {
 
   shellHook = ''
     echo "============================================================"
-    echo "  GHOST-SPECTRUM Cyber-Physical RF Resilience Environment"
-    echo "  Nodes: ESP32 Sentinel, ESP32 Mission, Arduino Uno Airgap"
+    echo "  LINK DOCTOR: self-diagnosing Wi-Fi with 433 MHz fallback"
+    echo "  Nodes: A = IoT ESP32, B = Uno radio gateway, C = air-watcher ESP32"
     echo "============================================================"
   '';
 }

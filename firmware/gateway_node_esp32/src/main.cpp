@@ -1,125 +1,79 @@
+// Node B: 433 MHz radio gateway (ESP32). Receives Node A's radio frames, checks
+// them, and forwards the readings to the laptop over USB serial as JSON lines.
+// The relay clicks on while Node A is in radio-fallback mode.
 #include <Arduino.h>
 #include <RH_ASK.h>
-#include <SPI.h> // Dependency for RadioHead
+#include <SPI.h> // RadioHead needs it to compile
 
-// ==========================================
-// PIN DEFINITIONS (Arduino Uno R3)
-// ==========================================
-#define RX_433_PIN      11  // XY-MK-5V Data out -> Digital Pin 11
-#define RELAY_PIN       7   // 5V Relay Control -> Digital Pin 7
-#define STATUS_LED_PIN  13  // Onboard LED indicator
-#define RX_SPEED_BPS    2000
+#define RX_433_PIN      4    // XY-MK-5V DATA. Power the receiver from 3V3 so its data line stays 3.3V-safe for the ESP32
+#define RELAY_PIN       13
+#define LED_PIN         2    // onboard LED
+#define RELAY_HOLD_MS   3000  // relay stays on this long after the last fallback frame
 
-// RadioHead ASK driver (speed, rxPin, txPin, pttPin)
-RH_ASK rf433_rx(RX_SPEED_BPS, RX_433_PIN, 12, 0);
+// tx/ptt pins are unused here but RadioHead drives them as OUTPUTs: use free, non-strapping GPIOs
+RH_ASK rf433(2000, RX_433_PIN, 25, 33);
 
-// ==========================================
-// AIR-GAP MECHANISM STATE
-// ==========================================
-static bool airgap_isolated = false;
-static uint32_t failover_frames_received = 0;
+uint32_t last_fallback_frame = 0, last_heartbeat = 0, frames_ok = 0, frames_bad = 0;
+bool relay_on = false;
 
-// ==========================================
-// CRC-16-CCITT VALIDATION
-// ==========================================
-uint16_t crc16_ccitt(const uint8_t *data, size_t len) {
+uint16_t crc16_ccitt(const uint8_t *d, size_t n) {
     uint16_t crc = 0xFFFF;
-    for (size_t i = 0; i < len; i++) {
-        crc ^= (uint16_t)data[i] << 8;
-        for (int j = 0; j < 8; j++) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ 0x1021;
-            } else {
-                crc <<= 1;
-            }
-        }
+    for (size_t i = 0; i < n; i++) {
+        crc ^= (uint16_t)d[i] << 8;
+        for (int j = 0; j < 8; j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
     }
     return crc;
 }
 
-void trip_airgap_relay(uint16_t seq) {
-    airgap_isolated = true;
-    // Per PRD Section 9: Assert Pin 7 HIGH to energize coil and snap NC contact open
-    digitalWrite(RELAY_PIN, HIGH);
-    digitalWrite(STATUS_LED_PIN, HIGH);
-
-    Serial.print(F("{\"event\":\"AIRGAP_TRIPPED\",\"status\":\"ISOLATED\",\"seq\":"));
-    Serial.print(seq);
-    Serial.print(F(",\"rx_count\":"));
-    Serial.print(failover_frames_received);
-    Serial.println(F(",\"action\":\"RELAY_OPEN_CIRCUIT\"}"));
-}
-
-void reset_airgap_relay() {
-    airgap_isolated = false;
-    // De-energize coil: relay contacts return to Normally Closed (NC) nominal path
-    digitalWrite(RELAY_PIN, LOW);
-    digitalWrite(STATUS_LED_PIN, LOW);
-
-    Serial.println(F("{\"event\":\"AIRGAP_RESET\",\"status\":\"NOMINAL_CLOSED\",\"action\":\"CIRCUIT_RESTORED\"}"));
+void set_relay(bool on) {
+    if (on == relay_on) return;
+    relay_on = on;
+    digitalWrite(RELAY_PIN, on ? HIGH : LOW);
+    digitalWrite(LED_PIN, on ? HIGH : LOW);
 }
 
 void setup() {
     Serial.begin(115200);
-    
     pinMode(RELAY_PIN, OUTPUT);
-    pinMode(STATUS_LED_PIN, OUTPUT);
-    
-    // Initial state: Nominal circuit connected (Coil unpowered)
-    reset_airgap_relay();
-
-    if (rf433_rx.init()) {
-        Serial.println(F("[AIRGAP_NODE] RadioHead 433MHz ASK Receiver Initialized on Pin 11"));
-    } else {
-        Serial.println(F("[AIRGAP_NODE] RadioHead ASK Receiver init failed"));
-    }
-
-    Serial.println(F("[AIRGAP_NODE] Online. Ready for 433MHz failover packet or Serial TRIP/RESET."));
+    pinMode(LED_PIN, OUTPUT);
+    set_relay(false);
+    if (!rf433.init()) Serial.println(F("{\"n\":\"B\",\"error\":\"radio init failed\"}"));
+    Serial.println(F("{\"n\":\"B\",\"status\":\"up\"}"));
 }
 
 void loop() {
-    // Check for direct serial commands for manual bench testing
-    if (Serial.available()) {
-        String cmd = Serial.readStringUntil('\n');
-        cmd.trim();
-        if (cmd.equalsIgnoreCase("TRIP") || cmd.equalsIgnoreCase("ISOLATE")) {
-            trip_airgap_relay(9999);
-        } else if (cmd.equalsIgnoreCase("RESET") || cmd.equalsIgnoreCase("RESTORE")) {
-            reset_airgap_relay();
-        } else if (cmd.equalsIgnoreCase("STATUS")) {
-            Serial.print(F("{\"status\":\""));
-            Serial.print(airgap_isolated ? "ISOLATED" : "NOMINAL");
-            Serial.print(F("\",\"rx_count\":"));
-            Serial.print(failover_frames_received);
-            Serial.println(F("}"));
+    uint8_t f[RH_ASK_MAX_MESSAGE_LEN];
+    uint8_t len = sizeof(f);
+    uint32_t now = millis();
+
+    if (rf433.recv(f, &len)) {
+        uint16_t crc = ((uint16_t)f[14] << 8) | f[15];
+        if (len == 16 && f[0] == 0xA5 && f[1] == 0x02 && f[2] == 0x0A && crc == crc16_ccitt(f, 14)) {
+            frames_ok++;
+            bool fallback = f[3] & 1;
+            if (fallback) { last_fallback_frame = now; set_relay(true); }
+            Serial.print(F("{\"n\":\"B\",\"seq\":"));      Serial.print(((uint16_t)f[4] << 8) | f[5]);
+            Serial.print(F(",\"sensor\":"));               Serial.print(((uint16_t)f[6] << 8) | f[7]);
+            Serial.print(F(",\"rssi\":"));                Serial.print((int8_t)f[8]);
+            Serial.print(F(",\"loss\":"));                Serial.print(f[9]);
+            Serial.print(F(",\"rtt\":"));                 Serial.print(((uint16_t)f[10] << 8) | f[11]);
+            Serial.print(F(",\"reason\":"));              Serial.print(f[12]);
+            Serial.print(F(",\"ch\":"));                  Serial.print(f[13]);
+            Serial.print(F(",\"connected\":"));           Serial.print((f[3] & 2) ? 1 : 0);
+            Serial.print(F(",\"mode\":\""));              Serial.print(fallback ? F("radio") : F("wifi"));
+            Serial.println(F("\"}"));
+        } else {
+            frames_bad++;
         }
     }
 
-    // Check for incoming 433 MHz RF packet
-    uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
-    uint8_t buflen = sizeof(buf);
+    if (relay_on && now - last_fallback_frame > RELAY_HOLD_MS) set_relay(false);
 
-    if (rf433_rx.recv(buf, &buflen)) {
-        // Strict 8-byte frame validation per PRD Section 6.4
-        if (buflen == 8) {
-            uint8_t preamble   = buf[0];
-            uint8_t version    = buf[1];
-            uint8_t src_node   = buf[2];
-            uint8_t status_code= buf[3];
-            uint16_t seq       = ((uint16_t)buf[4] << 8) | buf[5];
-            uint16_t rx_crc    = ((uint16_t)buf[6] << 8) | buf[7];
-
-            uint16_t calc_crc = crc16_ccitt(buf, 6);
-
-            // Authenticate fields
-            if (preamble == 0xAA && version == 0x01 && src_node == 0x02 && status_code == 0x55 && rx_crc == calc_crc) {
-                failover_frames_received++;
-                if (!airgap_isolated) {
-                    trip_airgap_relay(seq);
-                }
-            } else {
-                Serial.println(F("[AIRGAP_NODE] Invalid checksum or unauthorized 433MHz frame rejected"));
-            }
-        }
+    if (now - last_heartbeat > 2000) {
+        last_heartbeat = now;
+        Serial.print(F("{\"n\":\"B\",\"hb\":1,\"ok\":"));  Serial.print(frames_ok);
+        Serial.print(F(",\"bad\":"));                     Serial.print(frames_bad);
+        Serial.print(F(",\"relay\":"));                   Serial.print(relay_on ? 1 : 0);
+        Serial.println(F("}"));
     }
 }

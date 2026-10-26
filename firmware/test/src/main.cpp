@@ -1,36 +1,44 @@
+
 #include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <SPI.h>
+#include <RF24.h>
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+// Constructor order: CE, CSN
+RF24 radio(9, 8);
 
 void setup() {
     Serial.begin(115200);
-    Wire.begin();
+    delay(1000);
 
-    Serial.println("Starting OLED test...");
+    Serial.println("\n=== nRF24L01 Diagnostic ===");
+    Serial.println("Starting radio...");
 
-    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-        Serial.println("OLED initialization failed at 0x3C");
-        while (true) {}
+    // Keep the Uno in SPI master mode
+    pinMode(10, OUTPUT);
+
+    if (!radio.begin()) {
+        Serial.println("FAIL: Radio did not respond over SPI.");
+        Serial.println("Check power, wiring, and module condition.");
+        return;
     }
 
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextSize(2);
-    display.setCursor(0, 10);
-    display.println("OLED OK!");
+    Serial.println("PASS: Radio responded!");
 
-    display.setTextSize(1);
-    display.setCursor(0, 40);
-    display.println("Arduino Uno test");
-    display.display();
+    radio.setPALevel(RF24_PA_LOW);
+    radio.setDataRate(RF24_1MBPS);
 
-    Serial.println("OLED initialized successfully!");
+    if (radio.isChipConnected()) {
+        Serial.println("PASS: Chip connection verified.");
+    } else {
+        Serial.println("FAIL: Chip connection check failed.");
+    }
+
+    Serial.println("\nRadio configuration:");
+    radio.printDetails();
+
+    Serial.println("\nDiagnostic finished.");
 }
 
-void loop() {}
+void loop() {
+    delay(1000);
+}

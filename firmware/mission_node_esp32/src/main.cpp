@@ -1,195 +1,215 @@
+// Node A: IoT device. Sends sensor readings over real Wi-Fi, measures its own
+// link health every packet, and falls back to 433 MHz radio when Wi-Fi fails
+// (on its own reflex, or ahead of time when the laptop agent tells it to).
 #include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
 #include <RH_ASK.h>
 #include <SPI.h>
+#include <ArduinoJson.h>
 
-// ==========================================
-// PIN & HARDWARE CONFIGURATION
-// ==========================================
-#define OLED_SDA_PIN    21
-#define OLED_SCL_PIN    22
-#define OLED_RESET_PIN  -1
-#define SCREEN_WIDTH    128
-#define SCREEN_HEIGHT   64
-#define SCREEN_ADDRESS  0x3C
+#if __has_include("secrets.h")
+#include "secrets.h"
+#else
+#error "Copy include/secrets.example.h to include/secrets.h and fill in your hotspot name/password"
+#endif
 
-#define TX_433_PIN      17
-#define TX_SPEED_BPS    2000
+// ---------------- Pins ----------------
+#define TX_433_PIN     17
+#define SENSOR_PIN     34   // ADC1 only: ADC2 pins stop working while Wi-Fi is on
+#define BUZZER_PIN     25   // active buzzer, HIGH = beep
+#define RH_UNUSED_RX   35   // input-only pin, RadioHead needs some RX pin
+#define RH_UNUSED_PTT  33   // never pass 0 here: RadioHead drives this pin as an output
 
-// RadioHead ASK driver (speed, rxPin, txPin, pttPin)
-RH_ASK rf433(TX_SPEED_BPS, 4, TX_433_PIN, 0);
+#define UDP_PORT       4210
+#define RADIO_BEACON_MS 5000  // standby frame so the laptop knows the radio path is alive
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
-static bool oled_present = false;
+RH_ASK rf433(2000, RH_UNUSED_RX, TX_433_PIN, RH_UNUSED_PTT);
+WiFiUDP udp;
+IPAddress server_ip;
 
-// ==========================================
-// SYSTEM STATE
-// ==========================================
-enum NodeMode {
-    MODE_NOMINAL_WIFI,
-    MODE_FAILOVER_433MHZ
-};
+// ---------------- Link state ----------------
+enum Mode : uint8_t { MODE_WIFI = 0, MODE_RADIO = 1 };
+Mode mode = MODE_WIFI;
+bool agent_forced_radio = false;   // set by laptop agent (pre-emptive switch)
+const char *mode_why = "boot";
 
-static NodeMode current_mode = MODE_NOMINAL_WIFI;
-static uint16_t telemetry_seq = 0;
-static uint32_t failover_packets_sent = 0;
-static unsigned long last_telemetry_time = 0;
+uint16_t seq = 0;
+uint32_t send_interval_ms = 500;
+uint32_t last_send = 0, last_beacon = 0, buzzer_off_at = 0;
 
-// ==========================================
-// PROTOCOL & CRC-16-CCITT
-// ==========================================
-// Polynomial: 0x1021, Initial: 0xFFFF
-uint16_t crc16_ccitt(const uint8_t *data, size_t len) {
+// Last 10 packets: was each acked, and how long did the ack take
+#define HIST 10
+uint32_t sent_at[HIST];
+uint16_t sent_seq[HIST];
+bool acked[HIST];
+uint16_t rtt_ms[HIST];
+uint16_t sent_sensor[HIST];
+bool replayed[HIST];
+
+volatile uint8_t last_reason = 0;          // Wi-Fi disconnect reason code
+volatile uint32_t last_reason_at = 0;
+uint8_t consecutive_acks = 0;
+
+uint16_t crc16_ccitt(const uint8_t *d, size_t n) {
     uint16_t crc = 0xFFFF;
-    for (size_t i = 0; i < len; i++) {
-        crc ^= (uint16_t)data[i] << 8;
-        for (int j = 0; j < 8; j++) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ 0x1021;
-            } else {
-                crc <<= 1;
-            }
-        }
+    for (size_t i = 0; i < n; i++) {
+        crc ^= (uint16_t)d[i] << 8;
+        for (int j = 0; j < 8; j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
     }
     return crc;
 }
 
-// Build 8-byte authenticated failover frame matching PRD Section 6.4
-void build_failover_frame(uint8_t *frame_out, uint16_t seq) {
-    frame_out[0] = 0xAA; // Byte 0: PREAMBLE SYNC
-    frame_out[1] = 0x01; // Byte 1: PROTOCOL VERSION & FLAGS (0x01 = FAILOVER COMMAND)
-    frame_out[2] = 0x02; // Byte 2: SOURCE NODE ID (0x02 = ESP32 MISSION CONTROLLER)
-    frame_out[3] = 0x55; // Byte 3: INCIDENT STATUS CODE (0x55 = AIRGAP ISOLATE & SWITCH TELEMETRY)
-    frame_out[4] = (seq >> 8) & 0xFF; // Byte 4: Seq MSB
-    frame_out[5] = seq & 0xFF;        // Byte 5: Seq LSB
-
-    uint16_t crc = crc16_ccitt(frame_out, 6);
-    frame_out[6] = (crc >> 8) & 0xFF; // Byte 6: CRC MSB
-    frame_out[7] = crc & 0xFF;        // Byte 7: CRC LSB
+void beep(uint32_t ms) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    buzzer_off_at = millis() + ms;
 }
 
-// ==========================================
-// OLED DISPLAY RENDERING
-// ==========================================
-void update_display() {
-    if (!oled_present) return;
+void set_mode(Mode m, const char *why) {
+    if (m == mode) return;
+    mode = m;
+    mode_why = why;
+    beep(m == MODE_RADIO ? 400 : 120);
+    Serial.printf("[NODE_A] mode -> %s (%s)\n", m == MODE_RADIO ? "RADIO" : "WIFI", why);
+}
 
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-
-    if (current_mode == MODE_NOMINAL_WIFI) {
-        display.setTextSize(1);
-        display.setCursor(0, 0);
-        display.println(">> GHOST-SPECTRUM <<");
-        display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
-
-        display.setTextSize(1);
-        display.setCursor(0, 18);
-        display.println("NODE: Mission Ctrler");
-
-        display.setTextSize(1);
-        display.setCursor(0, 32);
-        display.println("LINK: 2.4GHz [OK]");
-
-        display.setCursor(0, 46);
-        display.print("OOB:  433MHz STANDBY");
-
-        display.setCursor(0, 56);
-        display.print("PKT:  #");
-        display.print(telemetry_seq);
-    } else {
-        // High-contrast warning inverted header
-        display.fillRect(0, 0, 128, 14, SSD1306_WHITE);
-        display.setTextColor(SSD1306_BLACK);
-        display.setTextSize(1);
-        display.setCursor(8, 3);
-        display.println("! ATTACK DETECTED !");
-
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(1);
-        display.setCursor(0, 20);
-        display.println("AIR-GAP: ENGAGED [NC]");
-
-        display.setTextSize(1);
-        display.setCursor(0, 34);
-        display.println("STATUS: 433MHz ACTIVE");
-
-        display.setCursor(0, 48);
-        display.print("BURST TX: ");
-        display.print(failover_packets_sent);
-
-        display.setCursor(0, 56);
-        display.print("PDR: 100% (Sub-GHz)");
+// Loss % and mean RTT over packets old enough to have been answered
+void link_stats(uint8_t &loss_pct, uint16_t &rtt_mean) {
+    uint32_t now = millis();
+    int n = 0, lost = 0, rtt_n = 0;
+    uint32_t rtt_sum = 0;
+    for (int i = 0; i < HIST; i++) {
+        if (sent_at[i] == 0 || now - sent_at[i] < 400) continue;
+        n++;
+        if (acked[i]) { rtt_sum += rtt_ms[i]; rtt_n++; } else lost++;
     }
-    display.display();
+    loss_pct = n ? (lost * 100) / n : 0;
+    rtt_mean = rtt_n ? rtt_sum / rtt_n : 1000;  // 1000 = "no answers at all"
 }
 
-// ==========================================
-// ARDUINO SETUP & LOOP
-// ==========================================
+void handle_udp() {
+    int len = udp.parsePacket();
+    if (len <= 0) return;
+    char buf[128];
+    len = udp.read(buf, sizeof(buf) - 1);
+    buf[len] = 0;
+    StaticJsonDocument<128> doc;
+    if (deserializeJson(doc, buf)) return;
+
+    if (doc.containsKey("ack")) {
+        uint16_t s = doc["ack"];
+        for (int i = 0; i < HIST; i++) {
+            if (sent_seq[i] == s && sent_at[i] && !acked[i]) {
+                acked[i] = true;
+                rtt_ms[i] = millis() - sent_at[i];
+                if (consecutive_acks < 255) consecutive_acks++;
+            }
+        }
+        server_ip = udp.remoteIP();  // learn the laptop's address from its first reply
+    }
+    const char *cmd = doc["cmd"];
+    if (!cmd) return;
+    if (!strcmp(cmd, "radio")) { agent_forced_radio = true; set_mode(MODE_RADIO, "agent"); }
+    else if (!strcmp(cmd, "wifi")) { agent_forced_radio = false; }
+    else if (!strcmp(cmd, "rate")) { send_interval_ms = constrain((int)doc["ms"], 250, 5000); }
+}
+
+// 16-byte radio frame, decoded by the gateway
+void send_radio(uint16_t s, uint16_t sensor, int8_t rssi, uint8_t loss, uint16_t rtt, bool connected) {
+    uint8_t f[16];
+    f[0] = 0xA5; f[1] = 0x02; f[2] = 0x0A;
+    f[3] = (mode == MODE_RADIO ? 1 : 0) | (connected ? 2 : 0);
+    f[4] = s >> 8; f[5] = s;
+    f[6] = sensor >> 8; f[7] = sensor;
+    f[8] = (uint8_t)rssi; f[9] = loss;
+    f[10] = rtt >> 8; f[11] = rtt;
+    f[12] = last_reason; f[13] = WiFi.channel();
+    uint16_t crc = crc16_ccitt(f, 14);
+    f[14] = crc >> 8; f[15] = crc;
+    rf433.send(f, sizeof(f));  // returns once the previous frame has finished
+}
+
 void setup() {
     Serial.begin(115200);
-    delay(400);
+    pinMode(BUZZER_PIN, OUTPUT);
+    analogSetPinAttenuation(SENSOR_PIN, ADC_11db);
 
-    Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
-    if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-        oled_present = true;
-    } else {
-        oled_present = false;
-        Serial.println("[WARN] OLED not detected at 0x3C, continuing with Serial output");
-    }
+    if (!rf433.init()) Serial.println("[ERROR] RadioHead init failed");
 
-    if (rf433.init()) {
-        Serial.println("[INFO] 433MHz FS1000A RadioHead ASK initialized on GPIO 17");
-    } else {
-        Serial.println("[ERROR] RadioHead ASK init failed");
-    }
-
-    update_display();
-    Serial.println("[NODE2] Mission Telemetry Node Ready. Commands: FAILOVER, RESET, PING");
+    WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t info) {
+        last_reason = info.wifi_sta_disconnected.reason;
+        last_reason_at = millis();
+    }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+    WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t) {
+        Serial.print("[NODE_A] WIFI CONNECTED ip=");
+        Serial.println(WiFi.localIP());
+    }, ARDUINO_EVENT_WIFI_STA_GOT_IP);
+    WiFi.persistent(false);   // no flash writes while RadioHead's timer ISR runs
+    WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(true);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    udp.begin(UDP_PORT);
+#ifdef SERVER_IP
+    server_ip = IPAddress(SERVER_IP);
+#else
+    server_ip = IPAddress(255, 255, 255, 255);  // broadcast until the laptop answers
+#endif
+    Serial.println("[NODE_A] up");
 }
 
 void loop() {
-    // Process incoming control commands
-    if (Serial.available()) {
-        String cmd = Serial.readStringUntil('\n');
-        cmd.trim();
-        if (cmd.equalsIgnoreCase("FAILOVER") || cmd.equalsIgnoreCase("TRIGGER")) {
-            current_mode = MODE_FAILOVER_433MHZ;
-            Serial.println("[NODE2] Switching to 433MHz OOB FAILOVER mode!");
-            update_display();
-        } else if (cmd.equalsIgnoreCase("RESET") || cmd.equalsIgnoreCase("NOMINAL")) {
-            current_mode = MODE_NOMINAL_WIFI;
-            failover_packets_sent = 0;
-            Serial.println("[NODE2] Restored to NOMINAL 2.4GHz Wi-Fi link");
-            update_display();
+    uint32_t now = millis();
+    handle_udp();
+    if (buzzer_off_at && now > buzzer_off_at) { digitalWrite(BUZZER_PIN, LOW); buzzer_off_at = 0; }
+    if (now - last_send < send_interval_ms) return;
+    last_send = now;
+    seq++;
+
+    bool connected = WiFi.status() == WL_CONNECTED;
+    int8_t rssi = connected ? WiFi.RSSI() : -100;
+    uint16_t sensor = analogRead(SENSOR_PIN);
+    if (now - last_reason_at > 10000) last_reason = 0;  // forget stale reasons
+    uint8_t loss; uint16_t rtt;
+    link_stats(loss, rtt);
+
+    // Reflex: no Wi-Fi, or the last 3 packets went unanswered -> radio now
+    int slot = seq % HIST;
+    bool last3_lost = true;
+    for (int k = 1; k <= 3; k++) {
+        int i = (slot - k + HIST) % HIST;
+        if (!sent_at[i] || acked[i]) last3_lost = false;
+    }
+    if (!connected || last3_lost) { consecutive_acks = 0; set_mode(MODE_RADIO, connected ? "no reply" : "wifi lost"); }
+    else if (mode == MODE_RADIO && !agent_forced_radio && consecutive_acks >= 4) set_mode(MODE_WIFI, "recovered");
+
+    // Store-and-forward: any reading Wi-Fi didn't confirm within 800 ms is resent over radio
+    // (max 2 per loop: each 433 MHz frame takes ~160 ms on air)
+    int resent = 0;
+    for (int k = HIST - 1; k >= 1 && resent < 2; k--) {
+        int i = (slot - k + HIST) % HIST;
+        if (sent_at[i] && !acked[i] && !replayed[i] && now - sent_at[i] > 800 && now - sent_at[i] < 8000) {
+            send_radio(sent_seq[i], sent_sensor[i], rssi, loss, rtt, connected);
+            replayed[i] = true;
+            resent++;
         }
     }
 
-    unsigned long now = millis();
-    if (now - last_telemetry_time >= 500) {
-        last_telemetry_time = now;
-        telemetry_seq++;
+    sent_seq[slot] = seq; sent_at[slot] = now; acked[slot] = false; sent_sensor[slot] = sensor;
+    replayed[slot] = mode == MODE_RADIO;  // radio-mode readings go out on radio right below
 
-        if (current_mode == MODE_NOMINAL_WIFI) {
-            // Emulate 2.4 GHz nominal telemetry transmission
-            Serial.printf("{\"type\":\"TELEMETRY\",\"link\":\"WIFI_2.4G\",\"seq\":%u,\"status\":\"NOMINAL\"}\n", telemetry_seq);
-            update_display();
-        } else {
-            // Out-of-band 433 MHz failover transmission
-            uint8_t packet[8];
-            build_failover_frame(packet, telemetry_seq);
-
-            // Broadcast over 433 MHz RF
-            rf433.send(packet, sizeof(packet));
-            rf433.waitPacketSent();
-            failover_packets_sent++;
-
-            Serial.printf("{\"type\":\"FAILOVER_BURST\",\"link\":\"SUB_GHZ_433M\",\"seq\":%u,\"sent\":%u,\"status\":\"AIRGAP_ENGAGED\"}\n",
-                          telemetry_seq, failover_packets_sent);
-            update_display();
-        }
+    if (connected) {
+        char msg[200];
+        snprintf(msg, sizeof(msg),
+                 "{\"n\":\"A\",\"seq\":%u,\"sensor\":%u,\"rssi\":%d,\"loss\":%u,\"rtt\":%u,"
+                 "\"reason\":%u,\"ch\":%u,\"mode\":\"%s\",\"why\":\"%s\"}",
+                 seq, sensor, rssi, loss, rtt, last_reason, WiFi.channel(),
+                 mode == MODE_RADIO ? "radio" : "wifi", mode_why);
+        udp.beginPacket(server_ip, UDP_PORT);
+        udp.write((const uint8_t *)msg, strlen(msg));
+        udp.endPacket();
+    }
+    if (mode == MODE_RADIO || now - last_beacon > RADIO_BEACON_MS) {
+        last_beacon = now;
+        send_radio(seq, sensor, rssi, loss, rtt, connected);
     }
 }
