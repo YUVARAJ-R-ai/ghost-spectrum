@@ -18,6 +18,7 @@ export default function Rig() {
   const { camera, size } = useThree();
   const focus = useUi((s) => s.focus);
   const autoRotate = useUi((s) => s.autoRotate);
+  const zen = useUi((s) => s.zen);
   const idleAt = useRef(0);
   const dir = useRef(1);
   const home = useRef({ d: 16, pol: HOME_POL });
@@ -28,7 +29,7 @@ export default function Rig() {
     const vw = size.width, vh = size.height;
     const cam = camera as THREE.PerspectiveCamera;
     let left = 28, right = vw - 28, top = 84, bottom = vh - 28;
-    if (vw >= 768) { right = vw - 380 - 44; bottom = vh - 48; }
+    if (vw >= 768) { right = zen ? vw - 28 : vw - 380 - 44; bottom = vh - 48; }
     else { top = 62; bottom = vh * 0.54; left = 0; right = vw; }
     const freeW = Math.max(200, right - left), freeH = Math.max(160, bottom - top);
     const t = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
@@ -39,9 +40,9 @@ export default function Rig() {
     home.current.d = THREE.MathUtils.clamp(Math.max(dW, dH), 9, 70);
     const cx = (left + right) / 2 + (vw >= 768 ? 12 : 0), cy = (top + bottom) / 2 - (vw >= 768 ? 52 : 0);
     cam.setViewOffset(vw, vh, -(cx - vw / 2), -(cy - vh / 2), vw, vh);
-    if (ctl.current && !useUi.getState().focus) goHome(false);
+    if (ctl.current && !useUi.getState().focus) goHome(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size.width, size.height]);
+  }, [size.width, size.height, zen]);
 
   const goHome = (animate: boolean) => {
     const c = ctl.current; if (!c) return;

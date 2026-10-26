@@ -50,8 +50,8 @@ function Floor() {
             minDepthThreshold={0.4} maxDepthThreshold={1.5} color="#07080d" metalness={0.55} mirror={0.6} />
         ) : <meshStandardMaterial color="#07080d" roughness={0.8} metalness={0.4} />}
       </mesh>
-      <Grid position-y={0.004} args={[40, 40]} cellSize={0.6} cellThickness={0.5} cellColor="#161c2a" sectionSize={3} sectionThickness={0.9}
-        sectionColor="#222c44" fadeDistance={15} fadeStrength={1.6} infiniteGrid />
+      <Grid position-y={0.004} args={[40, 40]} cellSize={0.6} cellThickness={0.5} cellColor="#232c47" sectionSize={3} sectionThickness={1.1}
+        sectionColor="#38487a" fadeDistance={17} fadeStrength={1.4} infiniteGrid />
       <mesh rotation-x={-Math.PI / 2} position-y={0.012}>
         <ringGeometry args={[7.55, 7.585, 128]} />
         <meshBasicMaterial ref={ring} transparent toneMapped={false} depthWrite={false} />

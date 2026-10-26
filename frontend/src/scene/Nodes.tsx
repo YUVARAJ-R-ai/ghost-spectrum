@@ -33,6 +33,20 @@ function Hit({ id, r = 1.3, y = 0.7 }: { id: NodeId; r?: number; y?: number }) {
   );
 }
 
+/** Little surface-mount parts and header pins so a board reads as electronics, not a slab. Positions are x, z, width, depth, height. */
+function Smd({ y, parts, pins }: { y: number; parts: [number, number, number, number, number][]; pins?: { x: number; z: number; len: number }[] }) {
+  return (
+    <group position-y={y}>
+      {parts.map(([x, z, w, d, h], i) => (
+        <mesh key={i} position={[x, h / 2, z]}><boxGeometry args={[w, h, d]} /><meshStandardMaterial color={i % 3 === 0 ? "#cdb98a" : "#1a1b22"} roughness={0.45} metalness={i % 3 === 0 ? 0.9 : 0.2} /></mesh>
+      ))}
+      {pins?.map((p, i) => (
+        <mesh key={`p${i}`} position={[p.x, 0.035, p.z]}><boxGeometry args={[p.len, 0.07, 0.07]} /><meshStandardMaterial color="#e0c27a" metalness={1} roughness={0.25} emissive="#3a2a08" /></mesh>
+      ))}
+    </group>
+  );
+}
+
 const glassPlinth = { color: "#0b0d14", roughness: 0.15, metalness: 0.7, clearcoat: 1, clearcoatRoughness: 0.1 } as const;
 
 function Plinth({ r = 1.25, h = 0.14 }: { r?: number; h?: number }) {
@@ -85,7 +99,7 @@ export function NodeA() {
       <Plinth />
       <group ref={body} position-y={0.16}>
         <RoundedBox args={[1.7, 0.09, 1.05]} radius={0.03} smoothness={3} position-y={0.24}>
-          <meshPhysicalMaterial color="#0c2622" roughness={0.38} metalness={0.35} clearcoat={0.7} clearcoatRoughness={0.25} />
+          <meshPhysicalMaterial color="#12473d" emissive="#04261e" emissiveIntensity={0.9} roughness={0.38} metalness={0.3} clearcoat={0.8} clearcoatRoughness={0.2} />
         </RoundedBox>
         <RoundedBox args={[0.64, 0.08, 0.4]} radius={0.015} smoothness={2} position={[-0.32, 0.33, 0.05]}>
           <meshStandardMaterial color="#b9c0cc" roughness={0.28} metalness={0.95} />
@@ -96,6 +110,8 @@ export function NodeA() {
         <mesh position={[0.42, 0.37, -0.12]}><sphereGeometry args={[0.05, 12, 8]} /><meshPhysicalMaterial color="#222" roughness={0.1} metalness={0.2} clearcoat={1} /></mesh>
         <mesh position={[0.5, 0.33, 0.3]}><cylinderGeometry args={[0.13, 0.13, 0.1, 24]} /><meshStandardMaterial color="#0b0b0e" roughness={0.4} /></mesh>
         <mesh position={[0.02, 0.3, 0.4]}><sphereGeometry args={[0.04, 12, 8]} /><meshBasicMaterial ref={led} toneMapped={false} /></mesh>
+        <Smd y={0.285} parts={[[-0.7, 0.3, 0.09, 0.05, 0.03], [-0.62, 0.36, 0.05, 0.05, 0.03], [-0.05, -0.32, 0.12, 0.08, 0.05], [0.12, -0.38, 0.05, 0.05, 0.03], [0.2, 0.18, 0.08, 0.06, 0.04], [-0.55, -0.28, 0.1, 0.06, 0.03]]}
+          pins={[{ x: -0.32, z: 0.46, len: 0.6 }, { x: -0.32, z: -0.4, len: 0.6 }]} />
         {/* the 17.3 cm antenna wire on the 433 MHz transmitter */}
         <mesh position={[-0.7, 0.8, -0.32]}><cylinderGeometry args={[0.011, 0.011, 1.0, 8]} /><meshStandardMaterial color="#c8c2b0" metalness={0.9} roughness={0.3} /></mesh>
         <mesh position={[-0.7, 1.31, -0.32]}><sphereGeometry args={[0.05, 12, 8]} /><meshBasicMaterial ref={bead} toneMapped={false} /></mesh>
@@ -209,6 +225,22 @@ export function Laptop() {
   const glow = useRef<THREE.PointLight>(null!);
   const { ctx, tex } = useMemo(() => { const m = makeCanvasTexture(640, 400); return { ctx: m.ctx, tex: m.tex }; }, []);
   const last = useRef(0);
+  const keys = useMemo(() => {
+    // a drawn keyboard: five rows of backlit keys
+    const { ctx: c, tex } = makeCanvasTexture(640, 256);
+    c.fillStyle = "#07080d"; c.fillRect(0, 0, 640, 256);
+    const rows = [14, 14, 13, 12, 8];
+    rows.forEach((n, r) => {
+      const w = 640 / (n + 0.5), y = 8 + r * 48;
+      for (let i = 0; i < n; i++) {
+        const x = 6 + i * w + (r % 2 ? w * 0.25 : 0);
+        c.fillStyle = "#171a26"; c.beginPath(); c.roundRect(x, y, w - 6, 40, 6); c.fill();
+        c.fillStyle = "rgba(120,170,255,.16)"; c.fillRect(x + 4, y + 3, w - 14, 2);
+      }
+    });
+    tex.needsUpdate = true;
+    return tex;
+  }, []);
   useEntrance(g, 0.8);
 
   useFrame(({ clock }) => {
@@ -223,8 +255,9 @@ export function Laptop() {
       <Plinth r={1.5} />
       <group position-y={0.14}>
         <RoundedBox args={[2.0, 0.07, 1.3]} radius={0.03} smoothness={3} position-y={0.04}><meshStandardMaterial color="#c9cdd8" roughness={0.3} metalness={0.95} /></RoundedBox>
-        <mesh position={[0, 0.082, 0.14]}><boxGeometry args={[1.7, 0.008, 0.62]} /><meshStandardMaterial color="#0d0e14" roughness={0.6} /></mesh>
-        <mesh position={[0, 0.088, 0.14]}><boxGeometry args={[1.66, 0.002, 0.58]} /><meshBasicMaterial color="#6cb8ff" transparent opacity={0.07} toneMapped={false} /></mesh>
+        <mesh position={[0, 0.082, 0.1]}><boxGeometry args={[1.76, 0.008, 0.7]} /><meshStandardMaterial color="#0d0e14" roughness={0.6} /></mesh>
+        <mesh position={[0, 0.0875, 0.1]} rotation-x={-Math.PI / 2}><planeGeometry args={[1.7, 0.56]} /><meshBasicMaterial map={keys} toneMapped={false} /></mesh>
+        <RoundedBox args={[0.55, 0.008, 0.32]} radius={0.02} position={[0, 0.082, 0.62]}><meshStandardMaterial color="#b9bdc9" roughness={0.3} metalness={0.9} /></RoundedBox>
         <group position={[0, 0.07, -0.62]} rotation-x={-0.22}>
           <RoundedBox args={[2.0, 1.28, 0.05]} radius={0.035} smoothness={3} position-y={0.64}><meshStandardMaterial color="#aab0be" roughness={0.3} metalness={0.95} /></RoundedBox>
           <mesh position={[0, 0.64, 0.03]}><planeGeometry args={[1.88, 1.17]} /><meshBasicMaterial map={tex} toneMapped={false} /></mesh>
@@ -253,10 +286,12 @@ export function Gateway() {
     <group ref={g} position={POS.gateway} userData={{ id: "gateway" }}>
       <Plinth r={1.15} />
       <group position-y={0.14}>
-        <RoundedBox args={[1.5, 0.08, 0.9]} radius={0.03} smoothness={3} position-y={0.04}><meshPhysicalMaterial color="#0b1f33" roughness={0.4} metalness={0.3} clearcoat={0.6} /></RoundedBox>
+        <RoundedBox args={[1.5, 0.08, 0.9]} radius={0.03} smoothness={3} position-y={0.04}><meshPhysicalMaterial color="#12406a" emissive="#041b33" emissiveIntensity={0.9} roughness={0.4} metalness={0.3} clearcoat={0.7} /></RoundedBox>
         <RoundedBox args={[0.55, 0.07, 0.36]} radius={0.015} position={[-0.45, 0.12, 0.15]}><meshStandardMaterial color="#b9c0cc" roughness={0.28} metalness={0.95} /></RoundedBox>
         <RoundedBox args={[0.46, 0.05, 0.34]} radius={0.01} position={[0.05, 0.11, -0.2]}><meshStandardMaterial color="#0b4a35" roughness={0.45} metalness={0.2} /></RoundedBox>
         <mesh position={[0.05, 0.16, -0.2]}><cylinderGeometry args={[0.04, 0.04, 0.05, 12]} /><meshStandardMaterial color="#c8c8c8" metalness={1} roughness={0.2} /></mesh>
+        <Smd y={0.08} parts={[[-0.6, -0.3, 0.08, 0.06, 0.04], [-0.1, 0.3, 0.1, 0.06, 0.04], [0.2, -0.05, 0.06, 0.06, 0.03], [-0.3, -0.34, 0.05, 0.05, 0.03]]}
+          pins={[{ x: -0.45, z: 0.4, len: 0.5 }, { x: -0.45, z: -0.05, len: 0.5 }]} />
         <mesh ref={relay} position={[0.5, 0.36, 0.1]}><boxGeometry args={[0.42, 0.34, 0.34]} /><meshPhysicalMaterial color="#1c4fe0" roughness={0.35} clearcoat={0.5} /></mesh>
         <mesh position={[0.5, 0.2, 0.3]}><sphereGeometry args={[0.04, 12, 8]} /><meshBasicMaterial ref={relayLed} toneMapped={false} /></mesh>
         <mesh position={[0.05, 0.62, -0.2]}><cylinderGeometry args={[0.011, 0.011, 1.0, 8]} /><meshStandardMaterial color="#c8c2b0" metalness={0.9} roughness={0.3} /></mesh>

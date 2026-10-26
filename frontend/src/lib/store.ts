@@ -113,14 +113,17 @@ interface UiState {
   focus: NodeId | null;
   quality: "high" | "low";
   autoRotate: boolean;
+  zen: boolean;   // presentation mode: just the stage and the headline
+  setZen: (v: boolean) => void;
   setView: (v: View) => void;
   setFocus: (n: NodeId | null) => void;
   setQuality: (q: "high" | "low") => void;
   setAutoRotate: (v: boolean) => void;
 }
 export const useUi = create<UiState>((set) => ({
-  view: "stage", focus: null, quality: "high", autoRotate: true,
-  setView: (view) => set({ view, focus: null }),
+  view: "stage", focus: null, quality: "high", autoRotate: true, zen: false,
+  setZen: (zen) => set({ zen, focus: null }),
+  setView: (view) => set({ view, focus: null, zen: false }),
   setFocus: (focus) => set({ focus }),
   setQuality: (quality) => set({ quality }),
   setAutoRotate: (autoRotate) => set({ autoRotate }),

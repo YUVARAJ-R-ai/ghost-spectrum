@@ -37,7 +37,7 @@ export default function Packets() {
   };
   const spawn = (route: 0 | 1, color: THREE.Color, opts: Partial<Packet> = {}) => {
     const p = pool.find((q) => !q.alive); if (!p) return;
-    Object.assign(p, { alive: true, u: 0, route, ack: false, die: 2, size: 0.07, split: false, speed: route === 0 ? 1 / 1.9 : 1 / 2.7 }, opts);
+    Object.assign(p, { alive: true, u: 0, route, ack: false, die: 2, size: 0.055, split: false, speed: route === 0 ? 1 / 1.9 : 1 / 2.7 }, opts);
     p.color.copy(color);
   };
 
@@ -79,9 +79,9 @@ export default function Packets() {
         const u = p.u - (p.ack ? -1 : 1) * k * 0.0085;
         pointAt(table, u, v);
         const f = 1 - k / TRAIL;
-        o.position.copy(v); o.scale.setScalar(p.size * (0.35 + 0.65 * f) * (p.die < 2 ? 1 + Math.sin(performance.now() * 0.04) * 0.15 : 1)); o.updateMatrix();
+        o.position.copy(v); o.scale.setScalar(p.size * (0.3 + 0.7 * f) * (p.die < 2 ? 1 + Math.sin(performance.now() * 0.04) * 0.15 : 1)); o.updateMatrix();
         m.setMatrixAt(idx, o.matrix);
-        m.setColorAt(idx, c.copy(p.color).multiplyScalar(f * f * 3.4 * fade));
+        m.setColorAt(idx, c.copy(p.color).multiplyScalar(f * f * 2.3 * fade));
       }
     }
     for (; idx < N * TRAIL; idx++) { o.scale.setScalar(0.0001); o.updateMatrix(); m.setMatrixAt(idx, o.matrix); }
