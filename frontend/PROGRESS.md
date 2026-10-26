@@ -32,8 +32,13 @@ Done and verified in a real browser (GPU Chromium via Playwright), including aga
 - [x] Responsive: 390x844, 820x1180, 1024x768, 1280x720, 1440x900, 1920x1080, no horizontal overflow
 - [x] Committed: source commits + web/dist build
 
-## Ideas not done yet (pick from here when resuming)
-- Screen reader pass (aria-live on the headline), focus rings audit
-- Perf: test the low quality path (`__ld.useUi.getState().setQuality("low")`), maybe lower dpr cap on 4K
-- More polish on the 3D: Node C detail, laptop screen content, subtle camera parallax
-- Re-run the screenshot sweep after every change; rebuild web/dist and commit it at milestones only
+## Final state (2026-10-27 early morning)
+Everything in the plan is done and verified. The soak test (4 min story loop) holds 61 fps with flat memory. Low quality mode,
+reduced motion and a browser with WebGL disabled were all tested. The last smoke test ran the real hub serving web/dist with
+tools/fake_node.py: websocket data, a sealed incident report, fading detection, the Live/Demo switch.
+
+## Ideas if someone wants more
+- Screen reader pass beyond the aria-live headline
+- A second camera preset set for portrait phones (the stage is small on a 390 px wide screen)
+- Real device test on the user's Firefox (all CSS features used are in current Firefox, but it was not run there)
+- Rebuild web/dist and commit it only at milestones

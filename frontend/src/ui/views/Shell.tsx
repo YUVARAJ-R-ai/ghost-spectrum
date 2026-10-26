@@ -7,6 +7,8 @@ export default function Shell({ eyebrow, title, accent, lead, actions, children 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
       className="fixed inset-0 z-[15] overflow-y-auto" style={{ background: "radial-gradient(130% 100% at 50% 0%, rgba(5,5,7,.9), rgba(5,5,7,.965) 65%)" }}>
+      {/* content scrolls under the floating header; this fade keeps the two from printing over each other */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[16] h-[92px]" style={{ background: "linear-gradient(#050507 62%, rgba(5,5,7,0))" }} />
       <div className="mx-auto max-w-[1180px] px-4 pb-32 pt-[92px] md:px-8 md:pb-16 md:pt-[104px]">
         <motion.header initial={{ opacity: 0, y: 24, filter: "blur(10px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
           className="flex flex-wrap items-end justify-between gap-6">

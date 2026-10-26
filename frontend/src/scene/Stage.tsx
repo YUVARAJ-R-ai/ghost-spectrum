@@ -34,6 +34,55 @@ function Sky() {
   );
 }
 
+/** A soft pool of light on the stage floor, in the link's accent colour, with a slow breathing pulse. */
+function FloorGlow() {
+  const mat = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+    uniforms: { uAccent: { value: new THREE.Color() }, uTime: { value: 0 }, uAlert: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform vec3 uAccent; uniform float uTime, uAlert; varying vec2 vUv;
+      void main(){
+        float r = length(vUv - 0.5) * 2.0;
+        float pool = smoothstep(1.0, 0.0, r);
+        float rings = 0.5 + 0.5 * sin(r * 26.0 - uTime * 0.6);
+        float a = pool * pool * (0.16 + 0.03 * sin(uTime * 0.8)) + pool * 0.05 * rings * pool;
+        a *= 1.0 + uAlert * 0.6;
+        gl_FragColor = vec4(uAccent * a, 1.0);
+      }`,
+  }), []);
+  useFrame(({ clock }) => {
+    mat.uniforms.uTime.value = clock.elapsedTime;
+    mat.uniforms.uAccent.value.copy(S.accent);
+    mat.uniforms.uAlert.value = Math.max(S.deauth, S.auth);
+  });
+  return <mesh rotation-x={-Math.PI / 2} position-y={0.006} material={mat}><planeGeometry args={[19, 19]} /></mesh>;
+}
+
+/** Small beads that circle the outer ring forever. They are there only to make the stage feel alive. */
+function RingBeads() {
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const o = useMemo(() => new THREE.Object3D(), []);
+  const c = useMemo(() => new THREE.Color(), []);
+  const N = 36;
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 + t * (0.05 + (i % 3) * 0.012) * (i % 2 ? 1 : -1);
+      const r = 7.55 + (i % 4 === 0 ? 0.35 : 0);
+      o.position.set(Math.cos(a) * r, 0.05, Math.sin(a) * r); o.scale.setScalar(i % 5 === 0 ? 0.075 : 0.045); o.updateMatrix();
+      ref.current.setMatrixAt(i, o.matrix);
+      ref.current.setColorAt(i, c.copy(S.accent).multiplyScalar(i % 5 === 0 ? 3 : 1.5));
+    }
+    ref.current.instanceMatrix.needsUpdate = true;
+    if (ref.current.instanceColor) ref.current.instanceColor.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, N]} frustumCulled={false}>
+      <sphereGeometry args={[1, 8, 6]} /><meshBasicMaterial toneMapped={false} />
+    </instancedMesh>
+  );
+}
+
 /** The circular stage: a dark mirror floor, a fine grid, and a thin ring that glows with the link's colour. */
 function Floor() {
   const quality = useUi((s) => s.quality);
@@ -83,6 +132,8 @@ export default function Stage() {
         <Lightformer form="rect" intensity={1.0} position={[8, 3, -2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} color="#ffb36b" />
       </Environment>
       <Floor />
+      <FloorGlow />
+      <RingBeads />
       <Sparkles count={70} scale={[18, 5, 12]} position={[0, 2.5, 0]} size={2.2} speed={0.18} opacity={0.35} color="#9db8ff" />
     </>
   );
