@@ -41,8 +41,8 @@ export default function AgentFeed({ max = 5, className = "" }: { max?: number; c
 
             {older.length > 0 && (
               <ul className="mt-3 space-y-2 pr-1">
-                {older.slice(0, max).map((e) => (
-                  <li key={e.t} className="flex gap-3 text-[11.5px] leading-snug" style={{ color: "var(--muted)" }}>
+                {older.slice(0, max).map((e, i) => (
+                  <li key={`${e.t}-${i}`} className="flex gap-3 text-[11.5px] leading-snug" style={{ color: "var(--muted)" }}>
                     <time className="mono shrink-0 pt-px text-[10px]" style={{ color: "var(--faint)" }}>{timeShort(e.t)}</time>
                     <span className="line-clamp-2">{e.did}</span>
                   </li>

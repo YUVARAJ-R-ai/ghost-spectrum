@@ -25,7 +25,7 @@ export default function NodeTags() {
         const y = Math.max(s.y, window.innerWidth >= 768 ? 118 : 0);
         el.style.transform = `translate3d(${s.x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
         const seen = S.intro > (APPEAR[t.id] ?? 1.5);
-        el.style.opacity = seen && s.v && s.y > headerClear ? "" : "0";
+        el.style.opacity = seen && s.v && s.y > headerClear ? "1" : "0";
         const d = dots.current[t.id];
         if (d && n % 8 === 0) { const c = t.dot(); d.style.background = c; d.style.boxShadow = `0 0 10px ${c}`; }
       }
@@ -38,7 +38,7 @@ export default function NodeTags() {
   return (
     <div className="pointer-events-none fixed inset-0 z-[5] overflow-hidden transition-opacity duration-700" style={{ opacity: view === "stage" ? 1 : 0, visibility: view === "stage" ? "visible" : "hidden" }}>
       {TAGS.map((t) => (
-        <button key={t.id} ref={(el) => { refs.current[t.id] = el; }} className="node-tag absolute left-0 top-0" onClick={() => setFocus(t.id)}>
+        <button key={t.id} ref={(el) => { refs.current[t.id] = el; }} className="node-tag absolute left-0 top-0" style={{ opacity: 0 }} onClick={() => setFocus(t.id)}>
           <i ref={(el) => { dots.current[t.id] = el; }} />
           <span><b>{t.title}</b><em>{t.sub}</em></span>
         </button>

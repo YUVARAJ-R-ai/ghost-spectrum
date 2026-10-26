@@ -228,7 +228,9 @@ class Sim {
   }
 
   private note(saw: string, think: string, did: string) {
-    this.log.unshift({ t: now(), saw, think, did });
+    let t = now();
+    if (this.log[0] && t <= this.log[0].t) t = this.log[0].t + 0.001;   // two notes in one tick must not share a timestamp (it is the list key)
+    this.log.unshift({ t, saw, think, did });
     this.log.length = Math.min(this.log.length, 30);
   }
 

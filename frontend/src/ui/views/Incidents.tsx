@@ -109,7 +109,7 @@ export default function Incidents() {
           </div></Bezel>
         </motion.div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 md:gap-5">{reports.map((r, i) => <Card key={r.incident_id} r={r} i={i} />)}</div>
+        <div className="grid gap-4 md:grid-cols-2 md:gap-5">{reports.map((r, i) => <Card key={`${r.incident_id}-${r.sha256.slice(0, 8)}`} r={r} i={i} />)}</div>
       )}
     </Shell>
   );

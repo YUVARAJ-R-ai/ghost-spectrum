@@ -67,9 +67,15 @@ export default function Rig() {
   useEffect(() => {
     const c = ctl.current; if (!c) return;
     if (focus) {
-      const p = POS[focus === "A" ? "A" : focus];
-      // stand back and a little to the side, aiming left of the node so it lands clear of the detail card
-      c.setLookAt(p.x + 0.6, p.y + 2.9, p.z + 7.4, p.x - 1.1, p.y + 0.7, p.z, true);
+      // each node has its own good angle; the target sits left of the node so it lands clear of the detail card
+      const p = POS[focus];
+      const presets: Partial<Record<typeof focus, [number, number, number, number, number, number]>> = {
+        A: [p.x - 2.6, 3.0, p.z + 6.6, p.x - 1.3, p.y + 0.8, p.z],
+        air: [p.x + 5.4, 3.9, p.z + 6.0, p.x - 0.6, p.y + 0.6, p.z],
+        laptop: [p.x + 1.2, 2.8, p.z + 6.4, p.x - 1.1, p.y + 0.7, p.z],
+      };
+      const v = presets[focus] ?? [p.x + 0.6, p.y + 2.9, p.z + 7.4, p.x - 1.1, p.y + 0.7, p.z];
+      c.setLookAt(v[0], v[1], v[2], v[3], v[4], v[5], true);
     } else goHome(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);

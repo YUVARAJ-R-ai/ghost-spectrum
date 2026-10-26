@@ -48,16 +48,6 @@ export function RiseText({ text, className = "", style }: { text: string; classN
   );
 }
 
-/** Fades and lifts its children into view the first time they scroll on screen. */
-export function Reveal({ children, delay = 0, className = "" }: { children: ReactNode; delay?: number; className?: string }) {
-  return (
-    <motion.div className={className} initial={{ opacity: 0, y: 24, filter: "blur(10px)" }} whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.9, delay, ease: [0.32, 0.72, 0, 1] }}>
-      {children}
-    </motion.div>
-  );
-}
-
 /** requestAnimationFrame loop that survives re-renders and stops on unmount. */
 export function useRaf(fn: (dt: number, t: number) => void) {
   const ref = useRef(fn);
