@@ -82,9 +82,9 @@ export default function Rig() {
     const c = ctl.current;
     if (!c || !autoRotate || useUi.getState().focus || performance.now() < idleAt.current) return;
     const az = c.azimuthAngle;
-    if (az > HOME_AZ + 0.5) dir.current = -1;
-    if (az < HOME_AZ - 0.5) dir.current = 1;
-    c.rotate(dir.current * Math.min(dt, 0.05) * 0.045, 0, false);
+    if (az > HOME_AZ + 0.2) dir.current = -1;
+    if (az < HOME_AZ - 0.2) dir.current = 1;
+    c.rotate(dir.current * Math.min(dt, 0.05) * 0.03, 0, false);
   });
 
   return (

@@ -142,8 +142,8 @@ export function Hotspot() {
       const k = clamp((s - th) / 0.2, 0, 1) * up;
       const m = arcs.current[i]; if (!m) return;
       tmp.copy(S.auth > 0.5 || (up < 0.3 && S.online > 0.5) ? RED : BLUE).lerp(S.accent, 0.0);
-      m.color.copy(tmp).multiplyScalar(0.12 + k * 2.8);
-      m.opacity = 0.3 + k * 0.7;
+      m.color.copy(tmp).multiplyScalar(0.3 + k * 2.6);
+      m.opacity = 0.35 + k * 0.65;
     });
     dotMat.current.color.copy(S.auth > 0.5 || up < 0.3 ? RED : BLUE).multiplyScalar(S.online > 0.5 ? 2.5 : 0.3);
     slash.current.visible = up < 0.3 && S.online > 0.5 && S.auth < 0.5;

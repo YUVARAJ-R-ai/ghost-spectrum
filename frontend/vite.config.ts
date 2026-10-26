@@ -14,7 +14,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // keep three.js in its own chunk so the UI shell paints before the 3D engine parses
-        manualChunks: { three: ["three"], r3f: ["@react-three/fiber", "@react-three/drei", "@react-three/postprocessing"] },
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("/three/") || id.includes("postprocessing")) return "three";
+          if (id.includes("@react-three")) return "r3f";
+          return undefined;
+        },
       },
     },
   },

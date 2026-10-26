@@ -17,9 +17,15 @@ export default function AgentFeed({ max = 5, className = "" }: { max?: number; c
         </div>
 
         {!latest ? (
-          <p className="mt-4 text-[12.5px] leading-relaxed" style={{ color: "var(--faint)" }}>
-            Nothing to decide yet. The agent is watching the link and will explain itself the moment it acts.
-          </p>
+          <div className="mt-4">
+            <div className="relative h-[3px] overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,.06)" }}>
+              <span className="scan absolute inset-y-0 w-1/3 rounded-full" style={{ background: "linear-gradient(90deg, transparent, var(--accent), transparent)" }} />
+            </div>
+            <p className="mt-4 text-[13px] font-medium">Watching the link</p>
+            <p className="mt-1 text-[12px] leading-relaxed" style={{ color: "var(--muted)" }}>
+              Nothing to decide yet. The moment the signal fades, the router vanishes or the password changes, this is where the agent explains what it saw, what it thinks and what it did.
+            </p>
+          </div>
         ) : (
           <div className="mt-4">
             <AnimatePresence mode="popLayout" initial={false}>

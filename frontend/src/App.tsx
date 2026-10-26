@@ -7,6 +7,8 @@ import Header from "./ui/Header";
 import StageUI from "./ui/StageUI";
 import FocusCard from "./ui/FocusCard";
 import NodeTags from "./ui/NodeTags";
+import AlertBanner from "./ui/AlertBanner";
+import ViewHost from "./ui/views/ViewHost";
 
 const Scene = lazy(() => import("./scene/Scene"));
 
@@ -27,6 +29,7 @@ export default function App() {
       <NodeTags />
       <div className="grain" />
       <Header />
+      <AlertBanner />
       <AnimatePresence mode="wait">
         {view === "stage" && (
           <motion.div key="stage" exit={{ opacity: 0, filter: "blur(10px)" }} transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}>
@@ -34,6 +37,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ViewHost />
       <FocusCard />
     </>
   );

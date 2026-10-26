@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useHub } from "../lib/store";
 import { DIAGS } from "../lib/types";
 import { DIAG_COLOR, DIAG_GIST, DIAG_NAME } from "../lib/format";
@@ -20,6 +20,8 @@ export default function DiagCard() {
   const conf = probs ? probs[held] : 0;
   const color = DIAG_COLOR[held];
   const model = snap?.model;
+  const top = probs ? DIAGS.reduce((a, b) => (probs[a] >= probs[b] ? a : b)) : held;
+  const leaning = top !== held && probs && probs[top] >= 0.45 ? top : null;
 
   return (
     <Bezel>
@@ -49,6 +51,15 @@ export default function DiagCard() {
               <Styled name={DIAG_NAME[held]} />
             </motion.div>
             <p className="mt-1.5 text-[12px] leading-snug" style={{ color: "var(--muted)" }}>{DIAG_GIST[held]}</p>
+            <AnimatePresence>
+              {leaning && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }} className="overflow-hidden">
+                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-medium" style={{ background: "rgba(255,255,255,.05)", color: DIAG_COLOR[leaning], border: "1px solid var(--hair)" }}>
+                    <i className="inline-block h-1.5 w-1.5 rounded-full breathe" style={{ background: DIAG_COLOR[leaning] }} />confirming: {DIAG_NAME[leaning].toLowerCase()}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

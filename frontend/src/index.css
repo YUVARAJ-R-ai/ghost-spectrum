@@ -125,6 +125,9 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 @keyframes rise { from { opacity: 0; transform: translateY(18px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
 .rise { animation: rise .9s var(--ease-fluid) both; }
 
+@keyframes scan { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+.scan { animation: scan 2.4s var(--ease-fluid) infinite; }
+
 @keyframes breathe { 50% { opacity: .45; } }
 .breathe { animation: breathe 2.2s var(--ease-fluid) infinite; }
 
