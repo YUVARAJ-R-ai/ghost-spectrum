@@ -40,8 +40,8 @@ export default function FocusCard() {
   return (
     <AnimatePresence>
       {focus && (
-        <motion.aside key={focus} initial={{ opacity: 0, x: -24, filter: "blur(10px)" }} animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, x: -24, filter: "blur(10px)" }} transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }}
+        <motion.aside key={focus} initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }}
           className="fixed left-4 right-4 top-[76px] z-20 md:left-7 md:right-auto md:top-[92px] md:w-[300px]">
           <Bezel>
             <div className="p-5">

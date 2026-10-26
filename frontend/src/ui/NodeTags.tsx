@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useUi } from "../lib/store";
 import { TAGS, tagScreen } from "../scene/tags";
+import { S } from "../scene/world";
+
+// each label appears just after its node pops into the scene
+const APPEAR: Record<string, number> = { hotspot: 1.0, A: 1.4, gateway: 1.6, laptop: 1.8, air: 2.2 };
 
 /** Name labels pinned to the 3D nodes. Positions come from the scene every frame; click opens the node's detail card. */
 export default function NodeTags() {
@@ -13,11 +17,15 @@ export default function NodeTags() {
     let id = 0, n = 0;
     const loop = () => {
       n++;
+      const headerClear = window.innerWidth < 768 ? 76 : 0;  // keep tags out from under the mobile header
       for (const t of TAGS) {
         const el = refs.current[t.id], s = tagScreen[t.id];
         if (!el || !s) continue;
-        el.style.transform = `translate3d(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px, 0) translate(-50%, -100%)`;
-        el.style.opacity = s.v ? "" : "0";
+        // keep labels clear of the floating nav pill at the top
+        const y = Math.max(s.y, window.innerWidth >= 768 ? 118 : 0);
+        el.style.transform = `translate3d(${s.x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
+        const seen = S.intro > (APPEAR[t.id] ?? 1.5);
+        el.style.opacity = seen && s.v && s.y > headerClear ? "" : "0";
         const d = dots.current[t.id];
         if (d && n % 8 === 0) { const c = t.dot(); d.style.background = c; d.style.boxShadow = `0 0 10px ${c}`; }
       }

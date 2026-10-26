@@ -63,7 +63,7 @@ export default function DiagCard() {
           </div>
         </div>
 
-        <div className="mt-5 space-y-2.5">
+        <div className="diag-bars mt-5 space-y-2.5">
           {DIAGS.map((d) => {
             const p = probs?.[d] ?? 0;
             const top = d === held;

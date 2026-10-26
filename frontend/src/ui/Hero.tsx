@@ -16,7 +16,7 @@ export default function Hero() {
   const Icon = link.kind === "radio" ? Broadcast : link.kind === "alert" ? Lock : link.kind === "wifi" ? WifiHigh : WarningCircle;
 
   return (
-    <motion.section initial={{ opacity: 0, y: 40, filter: "blur(12px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+    <motion.section initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 1.1, delay: 0.25, ease: [0.32, 0.72, 0, 1] }}
       className="relative md:absolute md:bottom-7 md:left-7 md:w-[440px]">
       <Bezel>

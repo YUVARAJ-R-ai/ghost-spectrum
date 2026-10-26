@@ -69,7 +69,7 @@ export default function Header() {
         </div>
 
         <div className="hit flex items-center gap-2 md:gap-4">
-          <div className="hidden items-center gap-3.5 lg:flex">
+          <div className="hidden items-center gap-3.5 min-[1400px]:flex">
             <Dot on={!!snap?.node.online} label="Node A" title="IoT device" />
             <Dot on={!!snap?.gateway.online} label="Gateway" title="Node B · 433 MHz receiver" />
             <Dot on={!!snap?.sentinel.online} label="Air watcher" title="Node C · optional" />

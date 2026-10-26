@@ -29,7 +29,7 @@ export default function AgentFeed({ max = 5, className = "" }: { max?: number; c
         ) : (
           <div className="mt-4">
             <AnimatePresence mode="popLayout" initial={false}>
-              <motion.div key={latest.t} layout initial={{ opacity: 0, y: -16, filter: "blur(8px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              <motion.div key={latest.t} layout initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }} className="relative rounded-2xl p-4"
                 style={{ background: "linear-gradient(135deg, var(--accent-soft), rgba(255,255,255,.02))", border: "1px solid var(--hair)" }}>
                 <time className="mono mb-3 block text-[10px]" style={{ color: "var(--faint)" }}>{timeShort(latest.t)}</time>

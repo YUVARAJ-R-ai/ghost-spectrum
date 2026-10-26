@@ -11,14 +11,14 @@ import { motion } from "framer-motion";
 export default function StageUI() {
   return (
     <div className="stage-ui fixed inset-0 z-10 overflow-y-auto overscroll-contain md:overflow-hidden" style={{ pointerEvents: "none" }}>
-      <div className="h-[46dvh] md:hidden" />
+      <div className="h-[52dvh] md:hidden" />
       <div className="flex flex-col gap-3 px-4 pb-32 md:contents">
         <Hero />
-        <motion.div initial={{ opacity: 0, y: 40, filter: "blur(12px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, delay: 0.4, ease: [0.32, 0.72, 0, 1] }}
-          className="flex min-h-0 flex-col gap-3 md:absolute md:bottom-7 md:right-7 md:top-[84px] md:w-[380px]">
+          className="flex min-h-0 flex-col gap-3 md:absolute md:bottom-7 md:right-7 md:top-[84px] md:w-[380px] [&>*]:shrink-0">
           <DiagCard />
-          <AgentFeed className="min-h-[120px] flex-1" />
+          <AgentFeed className="!shrink min-h-[96px] flex-1" />
           <DemoDock />
         </motion.div>
       </div>
