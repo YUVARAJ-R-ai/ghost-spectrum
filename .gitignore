@@ -49,3 +49,8 @@ firmware/*/include/secrets.h
 # Frontend build tooling (the built app in web/dist IS committed so the hub needs no Node)
 frontend/node_modules/
 frontend/.vite/
+
+# The Python section above ignores lib/ and dist/; the frontend source lives in a lib/ folder and
+# its production build is committed on purpose (web/dist) so the hub runs without Node.
+!frontend/src/lib/
+!web/dist/
