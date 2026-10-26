@@ -17,8 +17,10 @@ export default function DiagCard() {
   const snap = useHub((s) => s.snap);
   const held = snap?.held ?? "nominal";
   const probs = snap?.probs;
-  const conf = probs ? probs[held] : 0;
-  const color = DIAG_COLOR[held];
+  // nothing arriving means nothing to diagnose: say so instead of repeating the last verdict
+  const silent = !snap?.node.online;
+  const conf = probs && !silent ? probs[held] : 0;
+  const color = silent ? "#5b5f6e" : DIAG_COLOR[held];
   const model = snap?.model;
   const top = probs ? DIAGS.reduce((a, b) => (probs[a] >= probs[b] ? a : b)) : held;
   const leaning = top !== held && probs && probs[top] >= 0.45 ? top : null;
@@ -46,13 +48,15 @@ export default function DiagCard() {
             </div>
           </div>
           <div className="min-w-0">
-            <motion.div key={held} initial={{ opacity: 0, y: 8, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            <motion.div key={silent ? "silent" : held} initial={{ opacity: 0, y: 8, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }} className="text-[24px] font-semibold leading-[1.05] tracking-[-0.035em]" style={{ color }}>
-              <Styled name={DIAG_NAME[held]} />
+              {silent ? <>No <span className="serif" style={{ fontSize: "1.12em" }}>data</span></> : <Styled name={DIAG_NAME[held]} />}
             </motion.div>
-            <p className="mt-1.5 text-[12px] leading-snug" style={{ color: "var(--muted)" }}>{DIAG_GIST[held]}</p>
+            <p className="mt-1.5 text-[12px] leading-snug" style={{ color: "var(--muted)" }}>
+              {silent ? (snap?.total ? "Nothing has arrived for 3 seconds, so there is nothing to diagnose." : "Waiting for the first packet from Node A.") : DIAG_GIST[held]}
+            </p>
             <AnimatePresence>
-              {leaning && (
+              {leaning && !silent && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }} className="overflow-hidden">
                   <span className="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-medium" style={{ background: "rgba(255,255,255,.05)", color: DIAG_COLOR[leaning], border: "1px solid var(--hair)" }}>
                     <i className="inline-block h-1.5 w-1.5 rounded-full breathe" style={{ background: DIAG_COLOR[leaning] }} />confirming: {DIAG_NAME[leaning].toLowerCase()}
@@ -65,8 +69,8 @@ export default function DiagCard() {
 
         <div className="diag-bars mt-5 space-y-2.5">
           {DIAGS.map((d) => {
-            const p = probs?.[d] ?? 0;
-            const top = d === held;
+            const p = silent ? 0 : probs?.[d] ?? 0;
+            const top = d === held && !silent;
             return (
               <div key={d} className="grid grid-cols-[104px_1fr_34px] items-center gap-3 text-[11.5px]" style={{ color: top ? "var(--ink)" : "var(--muted)" }}>
                 <span className="truncate">{DIAG_NAME[d]}</span>

@@ -11,6 +11,18 @@ export function Bezel({ children, className = "", coreClass = "", blur = true, t
   );
 }
 
+/** On/off switch whose knob glides on a spring. */
+export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
+      className="relative h-[22px] w-[40px] shrink-0 rounded-full transition-colors duration-500"
+      style={{ background: on ? "var(--accent-soft)" : "rgba(255,255,255,.08)", border: `1px solid ${on ? "var(--accent)" : "var(--hair)"}`, boxShadow: on ? "0 0 14px -2px var(--accent)" : "none" }}>
+      <motion.span className="absolute top-[2px] h-4 w-4 rounded-full" animate={{ left: on ? 20 : 2 }} transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        style={{ background: on ? "var(--accent)" : "#8d92a3" }} />
+    </button>
+  );
+}
+
 /** A number that rolls to its new value instead of snapping. */
 export function CountUp({ value, digits = 0, className = "", style }: { value: number; digits?: number; className?: string; style?: React.CSSProperties }) {
   const mv = useMotionValue(value);

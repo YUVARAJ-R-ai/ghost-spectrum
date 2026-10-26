@@ -11,6 +11,7 @@ import { AirWatcher, Gateway, Hotspot, Laptop, NodeA } from "./Nodes";
 import Links from "./Links";
 import Packets from "./Packets";
 import TagProjector from "./TagProjector";
+import Shockwave from "./Shockwave";
 
 export default function Scene() {
   const quality = useUi((s) => s.quality);
@@ -27,6 +28,7 @@ export default function Scene() {
         <Links />
         <Packets />
         <TagProjector />
+        <Shockwave />
         <EffectComposer multisampling={quality === "high" ? 4 : 0} enableNormalPass={false}>
           <Bloom intensity={quality === "high" ? 1.05 : 0.7} luminanceThreshold={0.62} luminanceSmoothing={0.25} mipmapBlur radius={0.72} />
           <Vignette offset={0.28} darkness={0.8} />

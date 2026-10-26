@@ -172,5 +172,5 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 
 /* short laptop screens: keep the right column from overflowing by dropping the secondary detail */
 @media (min-width: 768px) and (max-height: 800px) {
-  .diag-bars { display: none; }
+  .diag-bars, .dock-cap { display: none; }
 }

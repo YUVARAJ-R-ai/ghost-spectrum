@@ -21,6 +21,7 @@ export default function Rig() {
   const idleAt = useRef(0);
   const dir = useRef(1);
   const home = useRef({ d: 16, pol: HOME_POL });
+  const reduced = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Compute framing for the current viewport and shift the projection so the stage centres in the free area.
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function Rig() {
   // idle sway: a slow, bounded drift left and right so the stage always feels alive
   useFrame((_, dt) => {
     const c = ctl.current;
-    if (!c || !autoRotate || useUi.getState().focus || performance.now() < idleAt.current) return;
+    if (!c || !autoRotate || reduced || useUi.getState().focus || performance.now() < idleAt.current) return;
     const az = c.azimuthAngle;
     if (az > HOME_AZ + 0.2) dir.current = -1;
     if (az < HOME_AZ - 0.2) dir.current = 1;

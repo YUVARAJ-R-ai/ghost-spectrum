@@ -30,10 +30,13 @@ export const STORY: { s: Scenario; secs: number; title: string; caption: string 
 
 interface DemoCtl {
   scenario: Scenario; story: boolean; chapter: number; chapterT: number;
+  /** false = what a plain Wi-Fi node does: no radio fallback, no agent, so a failed send is simply lost */
+  protect: boolean; setProtect: (v: boolean) => void;
   pick: (s: Scenario) => void; playStory: () => void;
 }
 export const useDemo = create<DemoCtl>((set) => ({
-  scenario: "nominal", story: true, chapter: 0, chapterT: 0,
+  scenario: "nominal", story: true, chapter: 0, chapterT: 0, protect: true,
+  setProtect: (protect) => { sim.reset(); set({ protect }); },
   pick: (scenario) => { set({ scenario, story: false }); sim.since = now(); },
   playStory: () => { sim.since = now(); set({ story: true, chapter: 0, chapterT: 0, scenario: STORY[0].s }); },
 }));
@@ -111,6 +114,13 @@ class Sim {
   private lastPublish = 0;
   private lastReason = 0;
   private lastRadioAt = now();
+  private lostCount = 0;
+  private lastHeard = now();
+  /** start a clean run (used when protection is toggled) */
+  reset() {
+    this.lostCount = 0; this.forcedRadio = false; this.slowRate = false; this.interval = 0.5; this.mode = "wifi"; this.why = "";
+    this.pendingRadio = []; this.held = "nominal"; this.alert = null; this.incident = null; this.nominalSince = null; this.recent = [];
+  }
 
   start() {
     if (this.timer) return;
@@ -165,6 +175,20 @@ class Sim {
     if (connected) this.lastConnected = t;
     this.lastReason = reason;
 
+    if (!useDemo.getState().protect) {
+      // an ordinary Wi-Fi-only node: nothing to fall back to, so whatever Wi-Fi fails to deliver is lost
+      this.mode = "wifi"; this.why = "";
+      if (connected && Math.random() * 100 >= loss) {
+        this.seen.set(this.seq, { t, v: sensor, paths: new Set(["wifi"]) });
+        this.lastHeard = t;
+        this.win.push({ t, rssi, rtt, loss, reason, connected: 1 });
+        while (this.win.length && t - this.win[0].t > 5) this.win.shift();
+        if (this.win.length >= 3) { this.features = extract(this.win); this.diagnose(sc); }
+      } else this.lostCount++;
+      return;
+    }
+    this.lastHeard = t;
+
     // node reflex: no Wi-Fi means radio; the agent can force radio early
     const prevMode = this.mode;
     this.mode = !connected || this.forcedRadio ? "radio" : "wifi";
@@ -211,6 +235,7 @@ class Sim {
   private sendCmd(): boolean { return now() - this.lastConnected < 2; }
 
   private agentStep(sc: Scenario, label: Diag) {
+    if (!useDemo.getState().protect) { this.held = label; return; }   // diagnosis still runs; nobody acts on it
     const f = this.features as Features;
     const conf = this.probs[label];
     this.recent.push(conf >= 0.5 ? label : "unsure");
@@ -305,14 +330,14 @@ class Sim {
     }
     const snap: Snapshot = {
       now: t,
-      node: { online: true, mode: this.mode, why: this.why, path: this.mode, reason: REASON[this.lastReason] ?? String(this.lastReason) },
+      node: { online: t - this.lastHeard < 3, mode: this.mode, why: this.why, path: this.mode, reason: REASON[this.lastReason] ?? String(this.lastReason) },
       wifi_age: t - this.lastConnected,
       radio_age: Math.max(0, t - this.lastRadioAt),
       gateway: { online: true, relay: this.mode === "radio" ? 1 : 0, ok: this.seq, bad: 0 },
       sentinel: { online: true, port: "/dev/ttyUSB1" },
       air: { ch: 6, frames_per_s: air.frames, deauth_per_s: air.deauth },
       readings,
-      lost: 0,
+      lost: this.lostCount,
       total: this.seen.size + this.dropped,
       features: this.features,
       probs: { ...this.probs },
