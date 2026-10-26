@@ -9,18 +9,21 @@ import { S } from "./world";
 function Sky() {
   const mat = useMemo(() => new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, toneMapped: false,
-    uniforms: { uAccent: { value: new THREE.Color() }, uAlert: { value: 0 } },
+    uniforms: { uAccent: { value: new THREE.Color() }, uAlert: { value: 0 }, uTime: { value: 0 } },
     vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
-    fragmentShader: `uniform vec3 uAccent; uniform float uAlert; varying vec3 vP;
+    fragmentShader: `uniform vec3 uAccent; uniform float uAlert, uTime; varying vec3 vP;
       void main(){
         float h = vP.y;
         vec3 base = vec3(0.012, 0.014, 0.022);
-        float band = exp(-abs(h + 0.02) * 5.5);
+        // the horizon glow drifts slowly, so the backdrop is never perfectly still
+        float sway = 0.03 * sin(atan(vP.x, vP.z) * 3.0 + uTime * 0.18) + 0.015 * sin(atan(vP.x, vP.z) * 7.0 - uTime * 0.11);
+        float band = exp(-abs(h + 0.02 + sway) * 5.5);
         vec3 col = base + uAccent * band * (0.06 + uAlert * 0.05) + vec3(0.02,0.03,0.07) * smoothstep(0.0, 1.0, h) * 0.6;
         gl_FragColor = vec4(col, 1.0);
       }`,
   }), []);
-  useFrame(() => {
+  useFrame(({ clock }) => {
+    mat.uniforms.uTime.value = clock.elapsedTime;
     mat.uniforms.uAccent.value.copy(S.accent);
     mat.uniforms.uAlert.value = Math.max(S.deauth, S.auth);
   });

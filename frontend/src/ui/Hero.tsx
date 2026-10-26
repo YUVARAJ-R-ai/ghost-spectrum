@@ -26,8 +26,8 @@ export default function Hero() {
             <Icon size={22} weight="light" style={{ color: "var(--accent)", filter: "drop-shadow(0 0 8px var(--accent))" }} />
           </div>
 
-          <div className="mt-3.5 min-h-[3rem] text-[clamp(2rem,3.7vw,3rem)] font-semibold leading-[1.02] tracking-[-0.045em]"
-            style={{ color: "var(--accent)", textShadow: "0 0 40px var(--accent-soft), 0 0 2px var(--accent-soft)" }}>
+          <div className="mt-3.5 min-h-[3rem] font-semibold leading-[1.02] tracking-[-0.045em]"
+            style={{ color: "var(--accent)", textShadow: "0 0 40px var(--accent-soft), 0 0 2px var(--accent-soft)", fontSize: link.label.length > 14 ? "clamp(1.55rem,2.7vw,2.15rem)" : "clamp(2rem,3.7vw,3rem)" }}>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={link.label} exit={{ opacity: 0, y: -14, filter: "blur(6px)" }} transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}>
                 <RiseText text={link.label} />

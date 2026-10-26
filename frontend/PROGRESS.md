@@ -22,12 +22,18 @@ Build output goes to `web/dist` (base `/app/`), served by `server/app.py` at `/a
 - Gotchas learned: Tailwind's `.blur` class collides with custom class names (use `glass`); build ShaderMaterials imperatively
   (JSX `uniforms` prop is not the object you mutate); CSS resets must be in `@layer base`; drei `<Html>` errors under StrictMode (replaced by NodeTags).
 
-## Status
-- [x] scaffold, data layer, simulator with 6 scenarios + 11-chapter story
-- [x] Stage view: 3D scene (5 nodes, 2 shader wires, packets, ripples, camera rig), HUD panels
-- [ ] server/app.py: serve /app/ + /classic, redirect /
-- [ ] Views: Timeline, Diagnosis, Incidents (seal verification), Teach
-- [ ] Scene polish: failure states verified per scenario (fading/congestion/ap_down/auth_fail/deauth), handover choreography, click-to-focus
-- [ ] Mobile layout (390x844), tablet, 1920x1080, 1280x720 screenshots
-- [ ] Production build committed to web/dist, README section, tests/test_hub.py still passes
-- [ ] Perf pass (PerformanceMonitor low-quality path), reduced-motion, idle agent card state
+## Status (updated 2026-10-26 ~00:05)
+Done and verified in a real browser (GPU Chromium via Playwright), including against the real hub + fake_node:
+- [x] scaffold, data layer, simulator (6 scenarios, 11 chapter story, Protection on/off)
+- [x] Stage: 3D scene, shader wires, packets, ripples, shockwave on handover, glitch effect, moment toasts, node focus cards, zen mode (Z), hint
+- [x] Views: Timeline, Diagnosis (radar, rules ladder or model importances), Incidents (browser SHA-256 seal check, matches Python), Teach (live record/stop works)
+- [x] Live mode end to end: ws, reports, record/stop, train + reload model, waiting-for-node state
+- [x] server/app.py serves /app/ and /classic; README + frontend/README written; python tests/test_hub.py passes
+- [x] Responsive: 390x844, 820x1180, 1024x768, 1280x720, 1440x900, 1920x1080, no horizontal overflow
+- [x] Committed: source commits + web/dist build
+
+## Ideas not done yet (pick from here when resuming)
+- Screen reader pass (aria-live on the headline), focus rings audit
+- Perf: test the low quality path (`__ld.useUi.getState().setQuality("low")`), maybe lower dpr cap on 4K
+- More polish on the 3D: Node C detail, laptop screen content, subtle camera parallax
+- Re-run the screenshot sweep after every change; rebuild web/dist and commit it at milestones only

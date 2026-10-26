@@ -16,7 +16,7 @@ export default function Shockwave() {
   const waves = useRef<Wave[]>([]);
   const refs = useRef<(THREE.Mesh | null)[]>([]);
   const prev = useRef<{ mode: string | null; held: string | null; alert: string | null }>({ mode: null, held: null, alert: null });
-  const geo = useMemo(() => new THREE.RingGeometry(0.93, 1, 128), []);
+  const geo = useMemo(() => new THREE.RingGeometry(0.975, 1, 128), []);
   const mats = useMemo(() => Array.from({ length: 4 }, () => new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide })), []);
 
   useFrame((_, dt) => {
@@ -37,7 +37,7 @@ export default function Shockwave() {
       if (w.t >= 1) { waves.current.splice(i, 1); m.visible = false; continue; }
       const k = 1 - Math.pow(1 - w.t, 3);
       m.visible = true; m.position.set(w.at.x, 0.06, w.at.z); m.scale.setScalar(0.4 + k * 11);
-      mats[i].color.copy(w.color).multiplyScalar(2.2); mats[i].opacity = Math.pow(1 - w.t, 1.8) * 0.95;
+      mats[i].color.copy(w.color).multiplyScalar(2.2); mats[i].opacity = Math.pow(1 - w.t, 1.8) * 0.8;
     }
   });
 

@@ -1,17 +1,31 @@
 import { Canvas } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
-import { Bloom, EffectComposer, Vignette, ToneMapping } from "@react-three/postprocessing";
-import { ToneMappingMode } from "postprocessing";
+import { Bloom, ChromaticAberration, EffectComposer, Vignette, ToneMapping } from "@react-three/postprocessing";
+import { BlendFunction, ToneMappingMode } from "postprocessing";
+import { useFrame } from "@react-three/fiber";
+import { useMemo } from "react";
 import * as THREE from "three";
 import { useUi } from "../lib/store";
 import StateDriver from "./StateDriver";
 import Stage from "./Stage";
 import Rig from "./Rig";
+import { S } from "./world";
 import { AirWatcher, Gateway, Hotspot, Laptop, NodeA } from "./Nodes";
 import Links from "./Links";
 import Packets from "./Packets";
 import TagProjector from "./TagProjector";
 import Shockwave from "./Shockwave";
+
+/** Splits the colour channels a little while readings are being lost or the air is under attack: the picture itself glitches. */
+function Glitch() {
+  const offset = useMemo(() => new THREE.Vector2(0, 0), []);
+  useFrame(() => {
+    const k = Math.max(S.lostFlash * 0.9, S.deauth * 0.55);
+    const j = k * (0.0016 + Math.random() * 0.0012);
+    offset.set(j, j * 0.6);
+  });
+  return <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={offset} radialModulation={false} modulationOffset={0} />;
+}
 
 export default function Scene() {
   const quality = useUi((s) => s.quality);
@@ -31,6 +45,7 @@ export default function Scene() {
         <Shockwave />
         <EffectComposer multisampling={quality === "high" ? 4 : 0} enableNormalPass={false}>
           <Bloom intensity={quality === "high" ? 1.05 : 0.7} luminanceThreshold={0.62} luminanceSmoothing={0.25} mipmapBlur radius={0.72} />
+          <Glitch />
           <Vignette offset={0.28} darkness={0.8} />
           <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
         </EffectComposer>

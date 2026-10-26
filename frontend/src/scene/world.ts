@@ -57,6 +57,8 @@ export const S = {
   relay: 0,         // relay clicked on
   sensor: 0.5,      // latest IR reading 0..1
   hasData: 0,
+  gw: 0,            // gateway (Node B) connected over USB
+  airOn: 0,         // air watcher (Node C) connected
   accent: new THREE.Color(COLOR.wifi),
   intro: 0,         // seconds since mount, for the entrance choreography
   hover: "" as string,

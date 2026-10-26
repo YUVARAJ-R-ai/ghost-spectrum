@@ -20,6 +20,8 @@ export default function StateDriver() {
     const radio = snap?.node.mode === "radio" ? 1 : 0;
 
     S.hasData = damp(S.hasData, snap ? 1 : 0, 3, dt);
+    S.gw = damp(S.gw, snap?.gateway.online ? 1 : 0, 4, dt);
+    S.airOn = damp(S.airOn, snap?.sentinel.online ? 1 : 0, 4, dt);
     S.online = damp(S.online, online, 4, dt);
     S.strength = damp(S.strength, online ? (connected ? signalStrength(f.rssi_now) : 0) : 0, 3.5, dt);
     S.wifiUp = damp(S.wifiUp, online * connected, 5, dt);

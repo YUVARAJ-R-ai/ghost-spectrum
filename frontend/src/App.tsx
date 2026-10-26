@@ -11,6 +11,7 @@ import AlertBanner from "./ui/AlertBanner";
 import ViewHost from "./ui/views/ViewHost";
 import SceneBoundary from "./ui/SceneBoundary";
 import Hint from "./ui/Hint";
+import Moments from "./ui/Moments";
 
 const Scene = lazy(() => import("./scene/Scene"));
 
@@ -59,6 +60,7 @@ export default function App() {
       ) : <Header />}
       <AlertBanner />
       <Hint />
+      <Moments />
       <AnimatePresence mode="wait">
         {view === "stage" && (
           <motion.div key="stage" exit={{ opacity: 0 }} transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}>
