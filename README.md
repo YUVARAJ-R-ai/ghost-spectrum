@@ -1,197 +1,137 @@
-# GHOST-SPECTRUM // Autonomous RF Intrusion Detection & Sub-GHz Air-Gap Resilience Framework
+# LINK DOCTOR: a self-diagnosing IoT link with 433 MHz radio fallback
 
-An Edge-AI Driven Cyber-Physical Radio Resilience Architecture with Hardware-in-the-Loop (HIL) Air-Gap Isolation.
+An IoT node that keeps its data flowing when Wi-Fi breaks, and works out **why** it broke.
 
----
-
-## 1. System Architecture Overview
-
-Ghost-Spectrum provides deterministic Layer-1/2 wireless threat detection and autonomous physical mitigation for edge computing infrastructure. It resolves the classic "connection-starvation loop" caused by 802.11 de-authentication floods and 2.4 GHz RF carrier jamming by deploying a distributed tri-node hardware-in-the-loop (HIL) system:
-
-```
-                      +---------------------------------------+
-                      |       EDGE SECOPS REASONING AGENT     |
-                      |  - Shannon Spectral Entropy Engine    |
-                      |  - Sliding-Window Velocity Detector   |
-                      |  - Cryptographic Incident Logger      |
-                      +-------------------+-------------------+
-                                          | WebSocket / JSON
-                                          v
-+------------------------+      +-------------------+      +-------------------------+
-|     NODE 1: SENTINEL   |      |  MISSION CONTROL  |      |   NODE 2: MISSION NODE  |
-| ESP32 #1 + NRF24L01+   |      |   WEB DASHBOARD   |      | ESP32 #2 + OLED + FS1000|
-| - 802.11 Frame Filter  |----->|  - 125-Ch Heatmap |<-----| - Nominal 2.4GHz Uplink |
-| - 125-Ch Carrier Sweep |      |  - CoT Reasoning  |      | - 433MHz Failover Burst |
-+------------------------+      |  - Relay Twin     |      +------------+------------+
-                                +-------------------+                   |
-                                                                        | 433 MHz RF
-                                                                        | (RadioHead ASK)
-                                                                        v
-                                                           +-------------------------+
-                                                           |   NODE 3: SUB-GHZ GATEWAY  |
-                                                           |  Arduino Uno + XY-MK-5V |
-                                                           |  + 5V Mechanical Relay  |
-                                                           |  - 10ms Galvanic Cutoff |
-                                                           +-------------------------+
-```
-
----
-
-## 2. Hardware Bill of Materials (BOM)
-
-| Subsystem Node | Component | Hardware Role | Interface / Bus | Operating Voltage |
-| :--- | :--- | :--- | :--- | :--- |
-| **Node 1: Sentinel** | ESP32 DevKit V1 (Type-C / Micro-USB) | Promiscuous 802.11 L2 sniffer & serial pipeline | USB Serial (921600 baud) | 5V USB (3.3V Logic) |
-| **Node 1: Sentinel** | NRF24L01+ 2.4GHz Transceiver | Sweeps 125 RF channels, reads RPD register | Hardware VSPI (Pins 4, 5, 18, 19, 23) | **3.3V ONLY** (Do NOT connect to 5V) |
-| **Node 2: Mission Node** | ESP32 DevKit V1 | Mission telemetry node & OOB transmitter | Wi-Fi STA + Hardware I2C + GPIO | 5V USB (3.3V Logic) |
-| **Node 2: Mission Node** | 0.96" SSD1306 OLED (I2C) | Local link health & attack warning display | Hardware I2C (SCL: 22, SDA: 21) | 3.3V or 5V VCC |
-| **Node 2: Mission Node** | FS1000A 433MHz TX Module | Transmits authenticated Sub-GHz failover packets | 1-Wire GPIO (Pin 17) via RadioHead | 5V VIN (for max RF power) |
-| **Node 3: Sub-GHz Telemetry Gateway** | Arduino Uno R3 (ATmega328P) | Air-gapped failover receiver & relay actuator | Digital Pin 11 (RX) + Pin 7 (Relay) | 5V Regulated USB / DC |
-| **Node 3: Sub-GHz Telemetry Gateway** | XY-MK-5V 433MHz RX Module | Receives 433MHz ASK failover burst packets | Digital Pin 11 (RH_ASK interrupt) | 5V VCC |
-| **Node 3: Sub-GHz Telemetry Gateway** | 5V 1-Channel Relay Module | Hardware Data Channel Multiplexer / Link Failover Switch | Digital Pin 7 (IN) | 5V VCC |
-
----
-
-## 3. Complete Pin-by-Pin Wiring Specifications
-
-### 3.1 Node 1: Spectrum Sentinel (ESP32 #1 + NRF24L01+)
-> [!CAUTION]
-> The NRF24L01+ VCC **MUST** be connected to the ESP32 **3.3V** pin. Connecting to 5V (VIN) will destroy the NRF24 RF chip.
-
-| NRF24L01+ Pin | ESP32 Pin | Wire Color Recommendation | Function |
-| :--- | :--- | :--- | :--- |
-| **VCC** | **3V3** (Pin 3.3V) | Red | 3.3V Regulated Power Rail |
-| **GND** | **GND** | Black | System Common Ground |
-| **CE** | **GPIO 4** | Orange | Chip Enable (Active HIGH for RX) |
-| **CSN** | **GPIO 5** | Yellow | SPI Chip Select (Active LOW) |
-| **SCK** | **GPIO 18** | Green | VSPI Clock line |
-| **MOSI** | **GPIO 23** | Blue | VSPI Master-Out-Slave-In |
-| **MISO** | **GPIO 19** | Purple | VSPI Master-In-Slave-Out |
-
----
-
-### 3.2 Node 2: Mission Telemetry Node (ESP32 #2 + OLED + FS1000A TX)
-| Peripheral | Peripheral Pin | ESP32 Pin | Function |
-| :--- | :--- | :--- | :--- |
-| **OLED (SSD1306)** | VCC | **3V3** or **VIN** | Display Power (3.3V / 5V) |
-| **OLED (SSD1306)** | GND | **GND** | Ground |
-| **OLED (SSD1306)** | SCL | **GPIO 22** | I2C Clock line |
-| **OLED (SSD1306)** | SDA | **GPIO 21** | I2C Data line |
-| **FS1000A 433MHz TX**| VCC | **VIN (5V)** | 5V Supply (gives full TX range) |
-| **FS1000A 433MHz TX**| GND | **GND** | Ground |
-| **FS1000A 433MHz TX**| DATA | **GPIO 17** | RadioHead ASK Modulation line |
-| **FS1000A 433MHz TX**| ANT | 17.3 cm wire | Quarter-wave whip antenna |
-
----
-
-### 3.3 Node 3: Air-Gap Subsystem (Arduino Uno + XY-MK-5V RX + 5V Relay)
-| Peripheral | Peripheral Pin | Arduino Uno Pin | Function |
-| :--- | :--- | :--- | :--- |
-| **XY-MK-5V 433MHz RX**| VCC | **5V** | 5V Regulated Supply |
-| **XY-MK-5V 433MHz RX**| GND | **GND** | Ground |
-| **XY-MK-5V 433MHz RX**| DATA | **Digital Pin 11** | RadioHead ASK Input pin |
-| **5V Relay Module** | VCC | **5V** | Relay Board Logic & Coil Supply |
-| **5V Relay Module** | GND | **GND** | Ground |
-| **5V Relay Module** | IN | **Digital Pin 7** | Relay Coil Trigger (Active HIGH) |
-| **Protected Circuit** | Line In / Out | **COM & NC** | Normally Closed path (Trips Open upon Attack) |
-
----
-
-## 4. 1-Hour Rapid Deployment Plan
+- **Node A** (the IoT device) sends sensor readings over real Wi-Fi and measures its own link health on every packet: signal strength, ping, packet loss and the Wi-Fi disconnect reason.
+- A **trained classifier** on the laptop turns those numbers into a diagnosis: *healthy, signal fading, congested, router gone* or *password rejected*.
+- An **agent** acts on the diagnosis and explains each decision in plain English:
+  - **Signal fading:** switch to 433 MHz radio *before* the Wi-Fi drops (make-before-break).
+  - **Congested:** stay on Wi-Fi and halve the send rate.
+  - **Router gone:** ride it out on radio and rejoin automatically.
+  - **Password rejected:** alert a human, because retrying won't help.
+- **Store-and-forward:** any reading Wi-Fi fails to confirm within 0.8 s is resent over radio. The dashboard counts readings lost, and the target is **0**.
+- Every outage produces an incident report sealed with SHA-256.
 
 ```
-+----------------------------------------------------------------------------------+
-| [00:00 - 00:15] MILESTONE 1: PHYSICAL WIRING                                     |
-|  - Wire Node 1 (ESP32 #1 to NRF24L01 via VSPI).                                  |
-|  - Wire Node 2 (ESP32 #2 to OLED via I2C and FS1000A to GPIO 17).                |
-|  - Wire Node 3 (Arduino Uno to 433MHz RX on Pin 11 and Relay on Pin 7).          |
-+----------------------------------------------------------------------------------+
-| [00:15 - 00:30] MILESTONE 2: FIRMWARE FLASHING                                   |
-|  - Enter nix-shell: `nix-shell`                                                  |
-|  - Flash Node 1: `pio run -d firmware/sentinel_esp32 -t upload`                  |
-|  - Flash Node 2: `pio run -d firmware/mission_node_esp32 -t upload`              |
-|  - Flash Node 3: `pio run -d firmware/airgap_node_arduino -t upload`              |
-+----------------------------------------------------------------------------------+
-| [00:30 - 00:45] MILESTONE 3: AGENT PIPELINE & DASHBOARD START                    |
-|  - Run verification test: `python3 tools/test_hil_pipeline.py`                   |
-|  - Launch FastAPI Server: `python3 server/app.py`                                |
-|  - Open Web Dashboard: `http://localhost:8500`                                   |
-+----------------------------------------------------------------------------------+
-| [00:45 - 01:00] MILESTONE 4: FULL EVALUATION & ATTACK SNAP DEMO                  |
-|  - Verify 125-channel waterfall heatmap and live OLED readout.                   |
-|  - Click "Benign Bluetooth" -> Verify Agent logs "Alarms Suppressed".            |
-|  - Click "802.11 Deauth Flood" -> Audible relay SNAP + OLED switches to ALERT!  |
-|  - Inspect generated forensic JSON report in `server/incidents/`.                |
-+----------------------------------------------------------------------------------+
+             real Wi-Fi (phone hotspot)                     USB
+  Node A ───────────────────────────────▶ Laptop hub ◀─────────── Node B (ESP32)
+  ESP32 + IR + OLED + buzzer    ◀── agent commands ──┘  graph · model · agent      ▲
+  + FS1000A 433 MHz TX ─────────────────── 433 MHz radio ──────────────────────────┘
+                                                        ◀── USB ── Node C (ESP32, optional)
+                                                                   counts traffic / deauths on the hotspot's channel
 ```
 
----
+The node never depends on the laptop to fail over. Its own reflex is: no Wi-Fi, or 3 unanswered packets, means switch to radio. The laptop agent adds the *early* switch and the other decisions, while Wi-Fi can still carry its commands.
 
-## 5. Firmware Flashing Commands
+## Hardware
 
-### Using PlatformIO (Inside `nix-shell`):
+| Node | Parts | Job |
+|---|---|---|
+| A · IoT device | ESP32 DevKit, FS1000A 433 MHz TX, analog IR proximity sensor, active buzzer module, SSD1306 OLED *(optional)* | Sends readings, measures the link, falls back to radio |
+| B · radio gateway | ESP32 DevKit, XY-MK-5V 433 MHz RX, 5 V relay module | Receives radio frames and forwards them over USB; the relay clicks during fallback |
+| C · air watcher *(optional)* | ESP32 DevKit **without** NRF24 | Sniffs the hotspot's channel: traffic and deauth frames per second |
+| "The router" | Your phone's hotspot | The thing the examiner switches off / walks away with |
+
+Solder a **17.3 cm straight wire** to the ANT pad of both 433 MHz modules. Without antennas the range is a few cm.
+
+### Wiring: Node A (ESP32)
+
+| Part | Pin | ESP32 |
+|---|---|---|
+| FS1000A | VCC / GND / DATA | VIN (5 V) / GND / GPIO 17 |
+| IR proximity module | VCC → **3V3** · GND → GND · AO (analog out) → **GPIO 34** |
+| Buzzer module | VCC / GND / I/O | 3V3 / GND / GPIO 25 |
+| OLED *(optional)* | VCC / GND / SDA / SCL | **VIN (5 V)** / GND / GPIO 21 / GPIO 22 |
+
+GPIO 34 is on ADC1 on purpose: the ADC2 pins stop working while Wi-Fi is on. Power the IR module from 3V3 so its analog out never exceeds the ESP32’s 3.3 V input.
+
+The OLED is **optional** — Node A's full status is on the laptop dashboard, so the device works headless. If you do fit it, power its VCC from **VIN (5 V)**, not 3V3: on a USB-powered DevKit the weak 3V3 regulator can brown out under the OLED's load. The firmware detects a missing OLED and carries on. Keep its SDA/SCL on GPIO 21/22 only — never on the TX/RX (GPIO 1/3) or GPIO 12 pins, which break booting and flashing.
+
+### Wiring: Node B (ESP32)
+
+| Part | Pin | ESP32 |
+|---|---|---|
+| XY-MK-5V | VCC / GND / DATA | **3V3** / GND / GPIO 4 |
+| Relay | VCC / GND / IN | VIN (5 V) / GND / GPIO 13 |
+
+Power the 433 MHz **receiver from 3V3**, not 5 V: at 5 V its DATA line would push 5 V into the ESP32 and could damage the pin. 3V3 slightly cuts range, which is fine for a desk demo.
+
+### Node C
+Plain ESP32 on USB, nothing attached. **Leave the NRF24 disconnected.** The flashing failure (`invalid header: 0xffffffff`) came from it loading the 3.3 V rail.
+
+## Setup
+
 ```bash
-# 1. Start development shell
-nix-shell
+nix-shell                      # platformio, python, fastapi, scikit-learn
 
-# 2. Flash Node 1 (Sentinel Promiscuous Sniffer)
-pio run -d firmware/sentinel_esp32 -t upload --upload-port /dev/ttyUSB0
+# 1. Hotspot credentials for Node A
+cp firmware/mission_node_esp32/include/secrets.example.h firmware/mission_node_esp32/include/secrets.h
+$EDITOR firmware/mission_node_esp32/include/secrets.h
 
-# 3. Flash Node 2 (Mission Telemetry & OLED)
-pio run -d firmware/mission_node_esp32 -t upload --upload-port /dev/ttyUSB1
+# 2. Flash (plug one board at a time; check the port with `ls /dev/ttyUSB* /dev/ttyACM*`)
+pio run -d firmware/mission_node_esp32 -t upload --upload-port /dev/ttyUSB0   # Node A
+pio run -d firmware/gateway_node_esp32  -t upload --upload-port /dev/ttyUSB1  # Node B
+pio run -d firmware/sentinel_esp32     -t upload --upload-port /dev/ttyUSB0   # Node C (optional)
 
-# 4. Flash Node 3 (Arduino Uno Air-Gap Relay)
-pio run -d firmware/airgap_node_arduino -t upload --upload-port /dev/ttyACM0
+# 3. Let Node A's UDP packets through the NixOS firewall (until reboot)
+sudo iptables -I nixos-fw 1 -p udp --dport 4210 -j nixos-fw-accept
+
+# 4. Connect the LAPTOP to the same phone hotspot, plug Node B (+ C) into USB, then:
+python3 server/app.py          # dashboard on http://localhost:8500
 ```
 
----
+Power Node A from a power bank so it's visibly wireless. The hub finds Node B and Node C on USB by what they print. To force a port, use `GATEWAY_PORT=/dev/ttyUSB1` or `SENTINEL_PORT=/dev/ttyUSB1`.
 
-## 6. Running Mission Control & Attack Simulation
+If an ESP32 won't flash: hold **BOOT**, tap **EN**, release BOOT when "Connecting..." appears.
 
-### Start the Edge Server:
+## Teaching the model (about 45 minutes)
+
+The dashboard's **Teach the model** panel labels every reading while you reproduce a failure. Record **each label twice**, in two separate sessions of about 3 minutes, so the accuracy score is honest (it's computed on sessions the model never saw).
+
+| Label | How to reproduce it |
+|---|---|
+| Healthy | Leave it alone, then move the phone around normally |
+| Signal fading | Put the **phone** (not Node A, whose radio must stay clear) in a biscuit tin and close the lid slowly, or walk away with it |
+| Congested | Phone on the hotspot running a speed test or a 4K video, with other devices on the hotspot downloading |
+| Router gone | Switch the hotspot off |
+| Password rejected | Change the hotspot password (the node keeps the old one) |
+
+Press **Stop** between sessions. Then:
+
 ```bash
-nix-shell --run "python3 server/app.py"
+python3 tools/train.py         # prints held-out accuracy, confusion matrix, top features
 ```
-The server will automatically bind to `http://localhost:8500`. If hardware nodes are connected, it streams high-speed serial telemetry at 921600 baud. If hardware nodes are still on your desk or pending USB plugging, it seamlessly engages the built-in Hardware-in-the-Loop (HIL) simulator!
 
-### Triggering Attacks via CLI:
+and click **Reload model** on the dashboard. Until a model exists, hand-written rules make the diagnosis, and the dashboard says so.
+
+## Testing without hardware
+
 ```bash
-# Test Benign 2.4 GHz Congestion (Bluetooth / Microwave):
-python3 tools/simulate_attack.py benign
-
-# Trigger Layer-2 802.11 Deauth Flood (>200 fps):
-python3 tools/simulate_attack.py deauth
-
-# Trigger Layer-1 Physical RF Carrier Jamming:
-python3 tools/simulate_attack.py jamming
-
-# Reset system back to nominal:
-python3 tools/simulate_attack.py reset
+python3 server/app.py &
+python3 tools/fake_node.py     # type: nominal, fading, congestion, ap_down, auth_fail
+python3 tests/test_hub.py      # merge / lost-count / agent decision self-checks
 ```
 
----
+`fake_node.py` stands in for Node A and Node B. It is for development only; the demo runs on real radios.
 
-## 7. Tamper-Evident Forensic Incident Reports
+## The demo (5 minutes)
 
-When an adversarial attack is mitigated, the agent automatically signs and emits a cryptographic SHA-256 post-mortem record saved under `server/incidents/`:
+1. **Live data.** Wave a hand in front of the IR sensor, and the blue line follows. "Every reading is confirmed by the laptop."
+2. **Hand her the phone and a biscuit tin. Ask her to put the phone in and close the lid slowly.** The RSSI line slides down, and the diagnosis becomes *Signal fading*. The agent switches to radio **before** the drop, the line turns teal then amber, the buzzer beeps and the relay clicks. Readings lost: **0**.
+3. **She opens the lid.** About 4 s of healthy link, then the agent releases the node to Wi-Fi.
+4. **Ask her to switch the hotspot off.** Diagnosis: *Router gone*. The node is on radio by reflex. Wave at the sensor: the amber line still follows. Turn the hotspot on and it rejoins automatically.
+5. **Change the hotspot password.** *Password rejected* appears, with a red banner: a human is needed.
+6. **Show the incident report** (`server/incidents/`): diagnoses, actions, readings carried by radio, readings lost, and the SHA-256 seal. Then show `tools/train.py`'s confusion matrix.
 
-```json
-{
-  "incident_id": "INC-1776618360-A4B92C",
-  "timestamp_iso": "2026-10-19T17:06:00Z",
-  "attack_classification": "LAYER-2 DEAUTH / DISASSOC FLOOD ATTACK",
-  "metrics": {
-    "deauth_velocity_fps": 275.0,
-    "shannon_spectral_entropy": 0.3821,
-    "target_bssid": "34:85:18:A2:B4:90",
-    "unique_source_mac_count": 1,
-    "mitigation_latency_ms": 14.2
-  },
-  "mitigation_actions": [
-    "Triggered Sub-GHz (433 MHz) Out-of-Band Failover",
-    "Mechanically Tripped Hardware-in-the-Loop Air-Gap Relay (Pin 7)",
-    "Dispatched Local OLED Alert [AIR-GAP ENGAGED]"
-  ],
-  "sha256_hash": "01f044b1a4b89d7c38719ec2070868fdb622df1fa8d38ee59dae75dbfa4f1efb"
-}
-```
+## Code map
+
+| Path | What |
+|---|---|
+| `firmware/mission_node_esp32` | Node A: Wi-Fi + link metrics + reflex + store-and-forward + 433 MHz TX |
+| `firmware/gateway_node_esp32` | Node B: 433 MHz RX → JSON over USB, relay |
+| `firmware/sentinel_esp32` | Node C: promiscuous Wi-Fi frame counter |
+| `server/app.py` | Hub: UDP + serial ingest, path merging, lost counting, dashboard websocket, data recording |
+| `server/brain.py` | Features, rule fallback, model loading, the agent |
+| `server/forensic.py` | SHA-256 incident reports |
+| `tools/train.py` | Trains and scores the RandomForest |
+| `web/` | Dashboard |

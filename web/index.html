@@ -1,280 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GHOST-SPECTRUM // Edge-AI SecOps Mission Control</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Doctor · self-diagnosing IoT link</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Top Navigation / Status Header -->
-        <header class="app-header">
-            <div class="brand-section">
-                <div class="logo-pulse"></div>
-                <div class="brand-titles">
-                    <h1>GHOST-SPECTRUM <span class="tag">SEC-CPS-2026</span></h1>
-                    <p class="subtitle">AUTONOMOUS RF INTRUSION DETECTION &amp; SUB-GHZ AIR-GAP RESILIENCE FRAMEWORK</p>
-                </div>
-            </div>
-
-            <div class="header-badges">
-                <div class="status-badge" id="badge-agent-state">
-                    <span class="dot"></span>
-                    <span class="label">AGENT:</span>
-                    <span class="val" id="val-agent-state">INITIALIZING</span>
-                </div>
-                <div class="status-badge" id="badge-primary-link">
-                    <span class="dot"></span>
-                    <span class="label">2.4 GHz LINK:</span>
-                    <span class="val" id="val-primary-link">NOMINAL</span>
-                </div>
-                <div class="status-badge" id="badge-oob-link">
-                    <span class="dot"></span>
-                    <span class="label">433 MHz OOB:</span>
-                    <span class="val" id="val-oob-link">STANDBY</span>
-                </div>
-                <div class="status-badge" id="badge-hw-port">
-                    <span class="dot"></span>
-                    <span class="label">NODE LINK:</span>
-                    <span class="val" id="val-hw-port">SCANNING</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Interactive Mission Control Toolbar -->
-        
-        <!-- Live Mission Telemetry Readout (The Critical Protected Payload) -->
-        <section class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent-cyan); background: #0c121d;">
-            <div class="card-header" style="margin-bottom: 8px;">
-                <div class="card-title">
-                    <span class="card-num" style="background:#0b2f3a; color:var(--accent-cyan);">LIVE PAYLOAD</span>
-                    <h2>Critical Mission Telemetry (Nuclear / Chemical Facility Core Monitor)</h2>
-                </div>
-                <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim);">
-                    TRANSMISSION ROUTE: <span id="telemetry-route-badge" style="color:var(--accent-cyan); font-weight:700;">2.4 GHz Wi-Fi (Primary)</span>
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; font-family:var(--font-mono);">
-                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
-                    <div style="font-size:0.65rem; color:var(--text-dim);">CORE TEMPERATURE</div>
-                    <div id="payload-temp" style="font-size:1.25rem; font-weight:800; color:#388bfd;">36.4 °C</div>
-                    <div style="font-size:0.6rem; color:#3fb950;">● Nominal Baseline</div>
-                </div>
-                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
-                    <div style="font-size:0.65rem; color:var(--text-dim);">RADIATION LEVEL</div>
-                    <div id="payload-rad" style="font-size:1.25rem; font-weight:800; color:#39c5cf;">0.14 µSv/h</div>
-                    <div style="font-size:0.6rem; color:#3fb950;">● Safe Zone Threshold</div>
-                </div>
-                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
-                    <div style="font-size:0.65rem; color:var(--text-dim);">CONTAINMENT PRESSURE</div>
-                    <div id="payload-psi" style="font-size:1.25rem; font-weight:800; color:#e6edf3;">101.3 kPa</div>
-                    <div style="font-size:0.6rem; color:#3fb950;">● Atmospheric Lock</div>
-                </div>
-                <div style="background:#060a10; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
-                    <div style="font-size:0.65rem; color:var(--text-dim);">SURVIVAL PDR (DATA CONTINUITY)</div>
-                    <div id="payload-pdr" style="font-size:1.25rem; font-weight:800; color:#3fb950;">100.0 %</div>
-                    <div id="payload-loss" style="font-size:0.6rem; color:var(--text-dim);">0 Packets Lost</div>
-                </div>
-            </div>
-        </section>
-
-        <section class="control-toolbar">
-            <div class="toolbar-title">HIL ATTACK INJECTION &amp; MITIGATION BENCH:</div>
-            <div class="button-group">
-                <button class="btn btn-benign" id="btn-sim-benign">
-                    <span class="icon">📶</span> Benign Bluetooth (2.4GHz)
-                </button>
-                <button class="btn btn-attack" id="btn-sim-deauth">
-                    <span class="icon">⚡</span> 802.11 Deauth Flood (>200 fps)
-                </button>
-                <button class="btn btn-jam" id="btn-sim-jam">
-                    <span class="icon">🚨</span> Broadband RF Jam (125-Ch)
-                </button>
-                <button class="btn btn-trip" id="btn-manual-trip">
-                    <span class="icon">🔌</span> Manual Radio Failover
-                </button>
-                <button class="btn btn-reset" id="btn-system-reset">
-                    <span class="icon">🔄</span> Reset to Nominal
-                </button>
-                <a href="/circuits" class="btn" style="background:#0f2738; color:#00e5ff; border:1px solid #1a516b; text-decoration:none;">
-                    <span class="icon">📐</span> Circuit Diagrams
-                </a>
-            </div>
-        </section>
-
-        <!-- Main Grid Panels -->
-        <main class="dashboard-grid">
-            <!-- PANEL A: 2.4 GHz RF Spectrum Waterfall -->
-            <div class="card panel-waterfall">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-num">PANEL A</span>
-                        <h2>2.4 GHz RF Spectrum Waterfall (125-Channel NRF24L01 Sweep)</h2>
-                    </div>
-                    <div class="card-metric" id="entropy-metric">
-                        <span class="metric-label">SHANNON ENTROPY H(X):</span>
-                        <span class="metric-value" id="val-entropy">0.000</span>
-                    </div>
-                </div>
-                <div class="canvas-wrapper">
-                    <canvas id="waterfall-canvas" width="600" height="180"></canvas>
-                    <div class="freq-axis">
-                        <span>2400 MHz (Ch 0)</span>
-                        <span>2412 MHz (Wi-Fi 1)</span>
-                        <span>2437 MHz (Wi-Fi 6)</span>
-                        <span>2462 MHz (Wi-Fi 11)</span>
-                        <span>2525 MHz (Ch 124)</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PANEL B: 802.11 Frame Density & Velocity Gauges -->
-            <div class="card panel-gauges">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-num">PANEL B</span>
-                        <h2>802.11 Link-Layer Frame Velocity &amp; Dispersion</h2>
-                    </div>
-                    <div class="card-metric">
-                        <span class="metric-label">DEAUTH VELOCITY:</span>
-                        <span class="metric-value" id="val-velocity">0.0 fps</span>
-                    </div>
-                </div>
-                <div class="gauges-container">
-                    <div class="gauge-box">
-                        <div class="gauge-title">MANAGEMENT DEAUTH BURSTS</div>
-                        <div class="gauge-bar-wrapper">
-                            <div class="gauge-bar-fill" id="gauge-deauth-bar" style="width: 0%;"></div>
-                        </div>
-                        <div class="gauge-readout" id="deauth-fps-readout">0 fps (Threshold: 50)</div>
-                    </div>
-                    <div class="gauge-box">
-                        <div class="gauge-title">DATA FRAME TELEMETRY DENSITY</div>
-                        <div class="gauge-bar-wrapper">
-                            <div class="gauge-bar-fill gauge-data" id="gauge-data-bar" style="width: 45%;"></div>
-                        </div>
-                        <div class="gauge-readout" id="data-fps-readout">28 fps [Active Uplink]</div>
-                    </div>
-                    <div class="metric-mini-grid">
-                        <div class="mini-stat">
-                            <span class="k">TARGET BSSID</span>
-                            <span class="v" id="stat-bssid">--:--:--:--:--:--</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="k">MAC DISPERSION</span>
-                            <span class="v" id="stat-dispersion">1.00</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="k">ENERGY RATIO</span>
-                            <span class="v" id="stat-energy-ratio">0.00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PANEL C: Agent Chain-of-Thought Live Console -->
-            <div class="card panel-console">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-num">PANEL C</span>
-                        <h2>Autonomous SecOps Agent Chain-of-Thought Reasoning</h2>
-                    </div>
-                    <span class="pulse-indicator">LIVE REASONING</span>
-                </div>
-                <div class="terminal-body" id="cot-terminal">
-                    <div class="term-line info">[AGENT]: Initializing autonomous multi-layer radio resilience pipeline...</div>
-                    <div class="term-line info">[AGENT]: Promiscuous 802.11 Layer-2 frame filter active. Sliding window = 500 ms.</div>
-                    <div class="term-line ok">[AGENT]: Nominal RF spectrum detected. Entropy within baseline limits.</div>
-                </div>
-            </div>
-
-            <!-- PANEL D: Telemetry Continuity Graph -->
-            <div class="card panel-continuity">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-num">PANEL D</span>
-                        <h2>Telemetry Continuity: Primary 2.4 GHz vs. 433 MHz Survival OOB</h2>
-                    </div>
-                    <div class="card-metric">
-                        <span class="metric-label">PACKET DELIVERY (PDR):</span>
-                        <span class="metric-value highlight" id="stat-pdr">100.0%</span>
-                    </div>
-                </div>
-                <div class="continuity-chart-wrapper">
-                    <canvas id="continuity-canvas" width="600" height="150"></canvas>
-                    <div class="chart-legend">
-                        <span class="leg-item"><span class="legend-color wifi-color"></span> Primary Wi-Fi Telemetry</span>
-                        <span class="leg-item"><span class="legend-color subghz-color"></span> 433 MHz Sub-GHz Failover Telemetry</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PANEL E: Digital Twin & Hardware State -->
-            <div class="card panel-digital-twin">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-num">PANEL E</span>
-                        <h2>Hardware-in-the-Loop Digital Twin (Physical Tri-Node State)</h2>
-                    </div>
-                </div>
-                <div class="twin-nodes-wrapper">
-                    <!-- Node 1: Sentinel -->
-                    <div class="twin-node" id="node-sentinel">
-                        <div class="node-header">
-                            <span class="node-id">NODE 1</span>
-                            <span class="node-name">ESP32 SENTINEL</span>
-                        </div>
-                        <div class="node-diagram">
-                            <div class="chip">ESP32-WROOM</div>
-                            <div class="sub-chip">NRF24L01+ (VSPI)</div>
-                        </div>
-                        <div class="node-status-line">
-                            <span>Promiscuous Sniffer:</span> <strong class="text-ok">ACTIVE</strong>
-                        </div>
-                    </div>
-
-                    <!-- Node 2: Mission Controller & OLED -->
-                    <div class="twin-node" id="node-mission">
-                        <div class="node-header">
-                            <span class="node-id">NODE 2</span>
-                            <span class="node-name">MISSION NODE</span>
-                        </div>
-                        <!-- Virtual OLED Screen Mirror -->
-                        <div class="oled-mirror" id="oled-mirror">
-                            <div class="oled-line-1" id="oled-line1">&gt;&gt; GHOST-SPECTRUM &lt;&lt;</div>
-                            <div class="oled-line-2" id="oled-line2">LINK: 2.4GHz [OK]</div>
-                            <div class="oled-line-3" id="oled-line3">OOB:  433MHz STANDBY</div>
-                            <div class="oled-line-4" id="oled-line4">PKT:  #0001</div>
-                        </div>
-                        <div class="node-status-line">
-                            <span>433MHz FS1000A:</span> <strong id="twin-fs1000-state">STANDBY</strong>
-                        </div>
-                    </div>
-
-                    <!-- Node 3: Air-Gap Relay Subsystem -->
-                    <div class="twin-node" id="node-airgap">
-                        <div class="node-header">
-                            <span class="node-id">NODE 3</span>
-                            <span class="node-name">SUB-GHZ GATEWAY</span>
-                        </div>
-                        <div class="relay-graphic" id="relay-visual">
-                            <div class="relay-coil">RELAY COIL</div>
-                            <div class="relay-contact closed" id="relay-contact-line">
-                                <span class="contact-label" id="contact-status-label">CLOSED (NC)</span>
-                            </div>
-                        </div>
-                        <div class="node-status-line">
-                            <span>Galvanic Contact:</span> <strong class="text-ok" id="relay-state-text">CLOSED (NOMINAL)</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
+  <header>
+    <div class="brand">
+      <h1>LINK DOCTOR</h1>
+      <span>an IoT node that knows <em>why</em> its Wi-Fi failed, and keeps its data flowing over 433 MHz radio</span>
     </div>
+    <div class="chips">
+      <span class="chip" id="chip-a"><i></i>Node A · IoT device</span>
+      <span class="chip" id="chip-b"><i></i>Node B · radio gateway</span>
+      <span class="chip" id="chip-c"><i></i>Node C · air watcher</span>
+    </div>
+  </header>
 
-    <script src="/static/app.js"></script>
+  <div id="alert" class="alert hidden"></div>
+
+  <section class="hero">
+    <div class="path" id="path">
+      <div class="path-label" id="path-label">WAITING FOR NODE A</div>
+      <div class="path-why" id="path-why">power it on and join the hotspot</div>
+    </div>
+    <div class="stat"><div class="num" id="delivered">0</div><div class="cap">readings delivered</div></div>
+    <div class="stat"><div class="num" id="lost">0</div><div class="cap">readings lost</div></div>
+    <div class="stat"><div class="num small" id="radio-age">–</div><div class="cap">433 MHz standby link</div></div>
+  </section>
+
+  <main>
+    <section class="card chart-card">
+      <div class="card-head">
+        <h2>Live sensor reading</h2>
+        <div class="legend">
+          <span><b class="sw wifi"></b>via Wi-Fi</span>
+          <span><b class="sw radio"></b>via 433 MHz radio</span>
+          <span><b class="sw both"></b>both (handover)</span>
+          <span><b class="sw rssi"></b>Wi-Fi signal (dBm)</span>
+        </div>
+      </div>
+      <canvas id="chart"></canvas>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Diagnosis</h2><span class="muted" id="model-src"></span></div>
+      <div class="diag-main" id="diag-main">–</div>
+      <div id="bars"></div>
+      <div class="importances" id="importances"></div>
+    </section>
+
+    <section class="card agent-card">
+      <div class="card-head"><h2>Agent decisions</h2><span class="muted">what it saw · what it thinks · what it did</span></div>
+      <div id="agent-log" class="agent-log"><p class="muted">No decisions yet. The link is being watched.</p></div>
+    </section>
+  </main>
+
+  <section class="row">
+    <div class="card">
+      <h2>Link health (from Node A)</h2>
+      <div class="tiles" id="health"></div>
+    </div>
+    <div class="card">
+      <h2>Air watcher (Node C)</h2>
+      <div class="tiles" id="air"></div>
+    </div>
+    <div class="card">
+      <h2>Teach the model</h2>
+      <p class="muted">Pick what you are doing to the Wi-Fi, do it, then stop. Every reading is saved with that label.</p>
+      <div class="rec-buttons" id="rec-buttons"></div>
+      <div class="rec-status" id="rec-status"></div>
+      <button class="ghost" id="reload">Reload model after <code>tools/train.py</code></button>
+    </div>
+    <div class="card">
+      <h2>Incident reports</h2>
+      <div id="reports" class="reports"><p class="muted">Each outage writes a SHA-256-sealed report to <code>server/incidents/</code>.</p></div>
+    </div>
+  </section>
+
+  <script src="/static/app.js"></script>
 </body>
 </html>
