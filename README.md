@@ -23,6 +23,32 @@ An IoT node that keeps its data flowing when Wi-Fi breaks, and works out **why**
 
 The node never depends on the laptop to fail over. Its own reflex is: no Wi-Fi, or 3 unanswered packets, means switch to radio. The laptop agent adds the *early* switch and the other decisions, while Wi-Fi can still carry its commands.
 
+## Run it
+
+```bash
+# 1. Just look at the dashboard (no hardware, no hub): needs Node 20+
+cd frontend && npm install && npm run dev        # open http://localhost:5173/app/
+
+# 2. Run the hub with the built dashboard (Python only, no Node needed)
+nix-shell                                        # or: pip install fastapi uvicorn pyserial scikit-learn joblib
+python3 server/app.py                            # open http://localhost:8500
+python3 tools/fake_node.py                       # optional: fake Node A, type: nominal, fading, congestion, ap_down, auth_fail
+
+# 3. Real hardware
+cp firmware/mission_node_esp32/include/secrets.example.h firmware/mission_node_esp32/include/secrets.h
+pio run -d firmware/mission_node_esp32 -t upload --upload-port /dev/ttyUSB0   # Node A, then B and C as in Setup below
+python3 server/app.py
+
+# 4. Teach and train a model, then press "Reload model" in the Diagnosis tab
+python3 tools/train.py
+
+# 5. Checks
+python3 tests/test_hub.py                        # hub self-checks
+cd frontend && npm run build                     # typecheck + rebuild web/dist (commit it)
+```
+
+Without a hub the dashboard plays its own simulator, so step 1 is enough to see everything.
+
 ## Hardware
 
 | Node | Parts | Job |
