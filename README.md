@@ -23,6 +23,32 @@ An IoT node that keeps its data flowing when Wi-Fi breaks, and works out **why**
 
 The node never depends on the laptop to fail over. Its own reflex is: no Wi-Fi, or 3 unanswered packets, means switch to radio. The laptop agent adds the *early* switch and the other decisions, while Wi-Fi can still carry its commands.
 
+## Run it
+
+```bash
+# 1. Just look at the dashboard (no hardware, no hub): needs Node 20+
+cd frontend && npm install && npm run dev        # open http://localhost:5173/app/
+
+# 2. Run the hub with the built dashboard (Python only, no Node needed)
+nix-shell                                        # or: pip install fastapi uvicorn pyserial scikit-learn joblib
+python3 server/app.py                            # open http://localhost:8500
+python3 tools/fake_node.py                       # optional: fake Node A, type: nominal, fading, congestion, ap_down, auth_fail
+
+# 3. Real hardware
+cp firmware/mission_node_esp32/include/secrets.example.h firmware/mission_node_esp32/include/secrets.h
+pio run -d firmware/mission_node_esp32 -t upload --upload-port /dev/ttyUSB0   # Node A, then B and C as in Setup below
+python3 server/app.py
+
+# 4. Teach and train a model, then press "Reload model" in the Diagnosis tab
+python3 tools/train.py
+
+# 5. Checks
+python3 tests/test_hub.py                        # hub self-checks
+cd frontend && npm run build                     # typecheck + rebuild web/dist (commit it)
+```
+
+Without a hub the dashboard plays its own simulator, so step 1 is enough to see everything.
+
 ## Hardware
 
 | Node | Parts | Job |
@@ -80,9 +106,38 @@ sudo iptables -I nixos-fw 1 -p udp --dport 4210 -j nixos-fw-accept
 python3 server/app.py          # dashboard on http://localhost:8500
 ```
 
+Open **http://localhost:8500**. You get the 3D dashboard (see below). The original plain dashboard is still at `/classic`.
+
 Power Node A from a power bank so it's visibly wireless. The hub finds Node B and Node C on USB by what they print. To force a port, use `GATEWAY_PORT=/dev/ttyUSB1` or `SENTINEL_PORT=/dev/ttyUSB1`.
 
 If an ESP32 won't flash: hold **BOOT**, tap **EN**, release BOOT when "Connecting..." appears.
+
+## The 3D dashboard
+
+The main screen is a 3D stage of the whole system. Node A, the router, the laptop hub, the gateway and the air watcher stand on a platform. Two glowing routes join them: Wi-Fi in blue, 433 MHz radio in amber. Every reading the hub receives flies along the route that carried it. Wi-Fi readings come back as a pale acknowledgement. A lost reading turns red and bursts.
+
+| Tab | What it shows |
+|---|---|
+| Stage | The 3D scene, the active path in large type, delivered and lost counters, the diagnosis, and the agent's notes. Click any node to fly to it and see its live numbers. |
+| Timeline | Every reading over time, coloured by path, with the Wi-Fi signal underneath, problem bands and lost readings. |
+| Diagnosis | A radar of the classifier's probabilities, the numbers it sees, and the rules (or the model's top features). |
+| Incidents | Each outage's sealed report. Your browser re-computes the SHA-256 seal, so an edited file shows as broken. |
+| Teach | The guided recording flow for training data. |
+
+Keys: `1` to `5` switch tabs, `Esc` closes a node card.
+
+**No hardware? No server?** The page has a built-in simulator. When it cannot reach a hub it plays a scripted story: fading signal, congestion, router gone, password change, deauth attack. Pick a failure by hand in the panel on the right. The switch in the header (Live / Demo) shows which source you are looking at. The **Link Doctor protection** switch in demo mode turns off the radio fallback and the agent, so you can watch a plain Wi-Fi node lose readings during an outage.
+
+**Changing the dashboard** needs Node 20 or newer. The built app is committed in `web/dist/`, so running the hub needs no Node.
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173/app/ , talks to a hub on :8500 if one is running
+npm run build      # writes web/dist/ , which the hub serves at /app/
+```
+
+See `frontend/README.md` for how it is built.
 
 ## Teaching the model (about 45 minutes)
 
@@ -134,4 +189,5 @@ python3 tests/test_hub.py      # merge / lost-count / agent decision self-checks
 | `server/brain.py` | Features, rule fallback, model loading, the agent |
 | `server/forensic.py` | SHA-256 incident reports |
 | `tools/train.py` | Trains and scores the RandomForest |
-| `web/` | Dashboard |
+| `web/` | The original plain dashboard (`/classic`) and the built 3D dashboard (`web/dist`, served at `/app/`) |
+| `frontend/` | Source of the 3D dashboard: React, three.js, a built-in simulator |

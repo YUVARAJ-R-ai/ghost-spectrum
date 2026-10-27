@@ -17,7 +17,7 @@ from typing import Any, Dict, Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from brain import CLASSES, FEATURES, REASON_NAMES, WINDOW_S, Agent, Diagnoser, extract_features
@@ -26,6 +26,7 @@ from forensic import INCIDENTS_DIR, write_incident_report
 UDP_PORT = 4210
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 WEB_DIR = os.path.join(ROOT, "web")
+DIST_DIR = os.path.join(WEB_DIR, "dist")   # the built 3D dashboard (frontend/ -> npm run build)
 DATA_CSV = os.path.join(ROOT, "data", "train.csv")
 LOST_GRACE_S = 3.0   # a missing reading only counts as lost after this long (radio can lag)
 
@@ -293,10 +294,20 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Link Doctor", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+if os.path.isdir(DIST_DIR):
+    app.mount("/app", StaticFiles(directory=DIST_DIR, html=True), name="app")
 
 
 @app.get("/")
 async def index():
+    # the 3D dashboard when it has been built, the original plain dashboard otherwise
+    if os.path.isdir(DIST_DIR):
+        return RedirectResponse("/app/")
+    return FileResponse(os.path.join(WEB_DIR, "index.html"))
+
+
+@app.get("/classic")
+async def classic():
     return FileResponse(os.path.join(WEB_DIR, "index.html"))
 
 
