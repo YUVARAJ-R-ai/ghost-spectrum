@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { useHub, useUi, type NodeId } from "../lib/store";
 import { COLOR, clamp, lerp } from "../lib/format";
 import { NODE_SCALE, POS, S, easeOutBack, introAt } from "./world";
-import { drawLaptop, drawPhone, makeCanvasTexture } from "./textures";
+import { drawLaptop, drawOled, drawNode1Oled, drawPhone, makeCanvasTexture } from "./textures";
 import Ripples from "./Ripples";
 
 const hexToVec = (h: string) => new THREE.Color(h);
@@ -68,6 +68,8 @@ export function NodeA() {
   const bead = useRef<THREE.MeshBasicMaterial>(null!);
   const ir = useRef<THREE.MeshBasicMaterial>(null!);
   const bars = useRef<THREE.InstancedMesh>(null!);
+  const { ctx: oledCtx, tex: oledTex } = useMemo(() => makeCanvasTexture(256, 128), []);
+  const lastOled = useRef(0);
   const N = 18;
   const tmp = useMemo(() => new THREE.Object3D(), []);
   const col = useMemo(() => new THREE.Color(), []);
@@ -80,6 +82,13 @@ export function NodeA() {
     led.current.color.copy(S.radio > 0.5 ? AMBER : S.wifiUp > 0.5 ? BLUE : RED).multiplyScalar(S.online ? 1.8 + Math.sin(t * 6) * 0.5 : 0.25);
     bead.current.color.copy(AMBER).multiplyScalar(0.25 + S.radio * 3.2 + Math.max(0, Math.sin(t * 8)) * S.radio);
     ir.current.color.setRGB(1, 0.15, 0.15).multiplyScalar(0.6 + S.sensor * 3);
+
+    if (t - lastOled.current > 0.15) {
+      lastOled.current = t;
+      drawNode1Oled(oledCtx, 256, 128);
+      oledTex.needsUpdate = true;
+    }
+
     // sensor history as a tiny 3D bar chart
     const pts = useHub.getState().sensors.slice(-N);
     for (let i = 0; i < N; i++) {
@@ -101,15 +110,37 @@ export function NodeA() {
         <RoundedBox args={[1.7, 0.09, 1.05]} radius={0.03} smoothness={3} position-y={0.24}>
           <meshPhysicalMaterial color="#12473d" emissive="#04261e" emissiveIntensity={0.9} roughness={0.38} metalness={0.3} clearcoat={0.8} clearcoatRoughness={0.2} />
         </RoundedBox>
-        <RoundedBox args={[0.64, 0.08, 0.4]} radius={0.015} smoothness={2} position={[-0.32, 0.33, 0.05]}>
-          <meshStandardMaterial color="#b9c0cc" roughness={0.28} metalness={0.95} />
-        </RoundedBox>
+        {/* Node 1 SSD1306 0.96" I2C OLED display module */}
+        <group position={[-0.26, 0.28, 0.05]} rotation-x={-0.18}>
+          <RoundedBox args={[0.76, 0.04, 0.72]} radius={0.015} smoothness={2}>
+            <meshStandardMaterial color="#0a2a66" roughness={0.5} metalness={0.2} />
+          </RoundedBox>
+          {[-0.12, -0.04, 0.04, 0.12].map((x, i) => (
+            <mesh key={i} position={[x, 0.03, -0.3]}>
+              <boxGeometry args={[0.04, 0.05, 0.04]} />
+              <meshStandardMaterial color="#e0c27a" metalness={0.9} roughness={0.3} />
+            </mesh>
+          ))}
+          <RoundedBox args={[0.7, 0.02, 0.46]} radius={0.01} position={[0, 0.03, 0.06]}>
+            <meshPhysicalMaterial color="#050810" roughness={0.1} metalness={0.4} clearcoat={1} clearcoatRoughness={0.1} />
+          </RoundedBox>
+          <mesh position={[0, 0.045, 0.06]} rotation-x={-Math.PI / 2}>
+            <planeGeometry args={[0.64, 0.4]} />
+            <meshBasicMaterial map={oledTex} toneMapped={false} />
+          </mesh>
+        </group>
         <mesh position={[-0.32, 0.375, 0.05]}><boxGeometry args={[0.44, 0.012, 0.2]} /><meshStandardMaterial color="#0a0a0f" roughness={0.5} /></mesh>
         <RoundedBox args={[0.34, 0.05, 0.3]} radius={0.01} position={[0.5, 0.31, -0.2]}><meshStandardMaterial color="#1c4fd0" roughness={0.5} metalness={0.2} /></RoundedBox>
         <mesh position={[0.6, 0.38, -0.12]}><sphereGeometry args={[0.05, 12, 8]} /><meshBasicMaterial ref={ir} toneMapped={false} /></mesh>
         <mesh position={[0.42, 0.37, -0.12]}><sphereGeometry args={[0.05, 12, 8]} /><meshPhysicalMaterial color="#222" roughness={0.1} metalness={0.2} clearcoat={1} /></mesh>
         <mesh position={[0.5, 0.33, 0.3]}><cylinderGeometry args={[0.13, 0.13, 0.1, 24]} /><meshStandardMaterial color="#0b0b0e" roughness={0.4} /></mesh>
         <mesh position={[0.02, 0.3, 0.4]}><sphereGeometry args={[0.04, 12, 8]} /><meshBasicMaterial ref={led} toneMapped={false} /></mesh>
+        {/* GPIO 27 push button (manual override) */}
+        <group position={[-0.32, 0.3, -0.32]}>
+          <mesh position-y={0.03}><boxGeometry args={[0.16, 0.06, 0.16]} /><meshStandardMaterial color="#1a1c24" roughness={0.6} /></mesh>
+          <mesh position-y={0.07}><cylinderGeometry args={[0.045, 0.045, 0.04, 16]} /><meshStandardMaterial color="#c0392b" roughness={0.3} /></mesh>
+          <mesh position={[0.12, 0.04, 0]}><sphereGeometry args={[0.025, 12, 8]} /><meshBasicMaterial color={S.radio > 0.5 ? AMBER : [0.2, 0.2, 0.2]} toneMapped={false} /></mesh>
+        </group>
         <Smd y={0.285} parts={[[-0.7, 0.3, 0.09, 0.05, 0.03], [-0.62, 0.36, 0.05, 0.05, 0.03], [-0.05, -0.32, 0.12, 0.08, 0.05], [0.12, -0.38, 0.05, 0.05, 0.03], [0.2, 0.18, 0.08, 0.06, 0.04], [-0.55, -0.28, 0.1, 0.06, 0.03]]}
           pins={[{ x: -0.32, z: 0.46, len: 0.6 }, { x: -0.32, z: -0.4, len: 0.6 }]} />
         {/* the 17.3 cm antenna wire on the 433 MHz transmitter */}
@@ -269,40 +300,83 @@ export function Laptop() {
   );
 }
 
-// ---------------------------------------------------------------- Node B (433 MHz gateway)
+// ---------------------------------------------------------------- Node B (433 MHz gateway with SSD1306 OLED)
 export function Gateway() {
   const g = useRef<THREE.Group>(null!);
-  const relayLed = useRef<THREE.MeshBasicMaterial>(null!);
   const bead = useRef<THREE.MeshBasicMaterial>(null!);
-  const relay = useRef<THREE.Mesh>(null!);
+  const rxLed = useRef<THREE.MeshBasicMaterial>(null!);
+  const { ctx, tex } = useMemo(() => makeCanvasTexture(256, 128), []);
+  const lastOled = useRef(0);
+
   useEntrance(g, 0.65);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    relayLed.current.color.copy(AMBER).multiplyScalar(0.12 + S.relay * 4);
     bead.current.color.copy(AMBER).multiplyScalar(0.3 + S.radio * 3 + Math.max(0, Math.sin(t * 9)) * S.radio);
-    relay.current.position.y = 0.36 + (S.relay > 0.5 ? Math.sin(t * 40) * 0.003 * Math.max(0, 1 - ((t * 0.5) % 1) * 6) : 0);
+    rxLed.current.color.copy(AMBER).multiplyScalar(0.15 + (S.radio > 0.5 ? 3.5 : 0.4 * Math.sin(t * 3)));
+    if (t - lastOled.current > 0.15) {
+      lastOled.current = t;
+      drawOled(ctx, 256, 128);
+      tex.needsUpdate = true;
+    }
   });
+
   return (
     <group ref={g} position={POS.gateway} userData={{ id: "gateway" }}>
-      <Plinth r={1.15} />
+      <Plinth r={1.25} />
       <group position-y={0.14}>
-        <RoundedBox args={[1.5, 0.08, 0.9]} radius={0.03} smoothness={3} position-y={0.04}><meshPhysicalMaterial color="#12406a" emissive="#041b33" emissiveIntensity={0.9} roughness={0.4} metalness={0.3} clearcoat={0.7} /></RoundedBox>
-        <RoundedBox args={[0.55, 0.07, 0.36]} radius={0.015} position={[-0.45, 0.12, 0.15]}><meshStandardMaterial color="#b9c0cc" roughness={0.28} metalness={0.95} /></RoundedBox>
-        <RoundedBox args={[0.46, 0.05, 0.34]} radius={0.01} position={[0.05, 0.11, -0.2]}><meshStandardMaterial color="#0b4a35" roughness={0.45} metalness={0.2} /></RoundedBox>
-        <mesh position={[0.05, 0.16, -0.2]}><cylinderGeometry args={[0.04, 0.04, 0.05, 12]} /><meshStandardMaterial color="#c8c8c8" metalness={1} roughness={0.2} /></mesh>
-        <Smd y={0.08} parts={[[-0.6, -0.3, 0.08, 0.06, 0.04], [-0.1, 0.3, 0.1, 0.06, 0.04], [0.2, -0.05, 0.06, 0.06, 0.03], [-0.3, -0.34, 0.05, 0.05, 0.03]]}
-          pins={[{ x: -0.45, z: 0.4, len: 0.5 }, { x: -0.45, z: -0.05, len: 0.5 }]} />
-        <mesh ref={relay} position={[0.5, 0.36, 0.1]}><boxGeometry args={[0.42, 0.34, 0.34]} /><meshPhysicalMaterial color="#1c4fe0" roughness={0.35} clearcoat={0.5} /></mesh>
-        <mesh position={[0.5, 0.2, 0.3]}><sphereGeometry args={[0.04, 12, 8]} /><meshBasicMaterial ref={relayLed} toneMapped={false} /></mesh>
-        <mesh position={[0.05, 0.62, -0.2]}><cylinderGeometry args={[0.011, 0.011, 1.0, 8]} /><meshStandardMaterial color="#c8c2b0" metalness={0.9} roughness={0.3} /></mesh>
-        <mesh position={[0.05, 1.13, -0.2]}><sphereGeometry args={[0.05, 12, 8]} /><meshBasicMaterial ref={bead} toneMapped={false} /></mesh>
+        {/* ESP8266 development board base */}
+        <RoundedBox args={[1.6, 0.08, 0.95]} radius={0.03} smoothness={3} position-y={0.04}>
+          <meshPhysicalMaterial color="#0e2a47" emissive="#031020" emissiveIntensity={0.9} roughness={0.4} metalness={0.3} clearcoat={0.7} />
+        </RoundedBox>
+        {/* ESP8266 metal shield */}
+        <RoundedBox args={[0.5, 0.07, 0.35]} radius={0.015} position={[-0.45, 0.12, 0.15]}>
+          <meshStandardMaterial color="#b9c0cc" roughness={0.28} metalness={0.95} />
+        </RoundedBox>
+        {/* 433 MHz receiver module (XY-MK-5V) */}
+        <RoundedBox args={[0.42, 0.05, 0.3]} radius={0.01} position={[-0.45, 0.11, -0.22]}>
+          <meshStandardMaterial color="#0b4a25" roughness={0.45} metalness={0.2} />
+        </RoundedBox>
+        <mesh position={[-0.45, 0.16, -0.22]}><cylinderGeometry args={[0.035, 0.035, 0.06, 12]} /><meshStandardMaterial color="#c8a860" metalness={0.8} roughness={0.3} /></mesh>
+        {/* RX antenna wire */}
+        <mesh position={[-0.45, 0.62, -0.22]}><cylinderGeometry args={[0.011, 0.011, 1.0, 8]} /><meshStandardMaterial color="#c8c2b0" metalness={0.9} roughness={0.3} /></mesh>
+        <mesh position={[-0.45, 1.13, -0.22]}><sphereGeometry args={[0.05, 12, 8]} /><meshBasicMaterial ref={bead} toneMapped={false} /></mesh>
+        {/* RX activity LED */}
+        <mesh position={[-0.2, 0.12, -0.22]}><sphereGeometry args={[0.035, 12, 8]} /><meshBasicMaterial ref={rxLed} toneMapped={false} /></mesh>
+
+        {/* SSD1306 0.96" I2C OLED display module */}
+        <group position={[0.26, 0.16, 0.02]} rotation-x={-0.18}>
+          {/* OLED PCB */}
+          <RoundedBox args={[0.76, 0.04, 0.72]} radius={0.015} smoothness={2}>
+            <meshStandardMaterial color="#0a2a66" roughness={0.5} metalness={0.2} />
+          </RoundedBox>
+          {/* 4-pin I2C header (GND, VDD, SCK, SDA) */}
+          {[-0.12, -0.04, 0.04, 0.12].map((x, i) => (
+            <mesh key={i} position={[x, 0.03, -0.3]}>
+              <boxGeometry args={[0.04, 0.05, 0.04]} />
+              <meshStandardMaterial color="#e0c27a" metalness={0.9} roughness={0.3} />
+            </mesh>
+          ))}
+          {/* Glass display panel frame */}
+          <RoundedBox args={[0.7, 0.02, 0.46]} radius={0.01} position={[0, 0.03, 0.06]}>
+            <meshPhysicalMaterial color="#050810" roughness={0.1} metalness={0.4} clearcoat={1} clearcoatRoughness={0.1} />
+          </RoundedBox>
+          {/* Screen plane rendering live canvas OLED texture */}
+          <mesh position={[0, 0.045, 0.06]} rotation-x={-Math.PI / 2}>
+            <planeGeometry args={[0.64, 0.4]} />
+            <meshBasicMaterial map={tex} toneMapped={false} />
+          </mesh>
+        </group>
+
+        <Smd y={0.08} parts={[[-0.1, 0.3, 0.08, 0.06, 0.04], [0.05, -0.3, 0.08, 0.06, 0.04], [-0.1, -0.2, 0.06, 0.06, 0.03]]}
+          pins={[{ x: -0.45, z: 0.4, len: 0.5 }]} />
       </group>
-      <Ripples position={[0.05, 0, -0.2]} color={() => AMBER} power={() => S.radio * 0.5} maxR={1.8} rate={0.45} count={3} />
-      <pointLight position={[0.5, 0.8, 0.5]} intensity={0.8 + 0} distance={4} color={AMBER} />
-      <Hit id="gateway" r={1.15} y={0.6} />
+      <Ripples position={[-0.45, 0, -0.22]} color={() => AMBER} power={() => S.radio * 0.6} maxR={2.0} rate={0.45} count={3} />
+      <pointLight position={[0.26, 0.6, 0.4]} intensity={0.7} distance={4} color={AMBER} />
+      <Hit id="gateway" r={1.2} y={0.6} />
     </group>
   );
 }
+
 
 // ---------------------------------------------------------------- Node C (air watcher)
 export function AirWatcher() {

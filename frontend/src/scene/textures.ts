@@ -100,3 +100,107 @@ export function drawLaptop(ctx: CanvasRenderingContext2D, w: number, h: number, 
   ctx.shadowBlur = 0;
   void t;
 }
+
+/** The Node 1 SSD1306 OLED display: Shows NODE-1: SENSOR, IR gauge, Edge-AI inference, RSSI, and IP */
+export function drawNode1Oled(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const st = useHub.getState();
+  const snap = st.snap;
+  const node = snap?.node;
+
+  // deep black background
+  ctx.fillStyle = "#020306";
+  ctx.fillRect(0, 0, w, h);
+
+  // Inverted header banner
+  const headerH = Math.round(h * 0.18);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, headerH);
+
+  ctx.font = `700 ${Math.round(h * 0.12)}px ${MONO}`;
+  ctx.fillStyle = "#000000";
+  ctx.textAlign = "left";
+  ctx.fillText("NODE-1: SENSOR", w * 0.04, headerH * 0.75);
+
+  ctx.textAlign = "right";
+  ctx.fillText(node?.online ? "WIFI:OK" : "WIFI:OFF", w * 0.96, headerH * 0.75);
+
+  // Normal phosphor white text
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "left";
+  ctx.font = `600 ${Math.round(h * 0.11)}px ${MONO}`;
+
+  const seq = node?.seq ?? 0;
+  const sensor = node?.sensor ?? 0;
+  ctx.fillText(`Seq: #${seq} IR: ${sensor}`, w * 0.04, h * 0.36);
+
+  // Visual sensor bar graph
+  const barW = Math.min(w * 0.92, Math.max(0, (sensor / 1023) * (w * 0.92)));
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(w * 0.04, h * 0.42, w * 0.92, h * 0.08);
+  ctx.fillRect(w * 0.04 + 1, h * 0.42 + 1, barW, h * 0.08 - 2);
+
+  // Edge ML status
+  const delta = Math.abs(sensor - 512);
+  const aiStatus = delta > 220 ? "OBSTRUCTION" : sensor < 150 ? "PROXIMITY_ALERT" : "NOMINAL";
+  ctx.fillText(`Edge-AI: ${aiStatus}`, w * 0.04, h * 0.65);
+
+  // RSSI
+  const rssi = node?.rssi ?? snap?.features.rssi_now ?? -58;
+  ctx.fillText(`RSSI: ${Math.round(rssi)} dBm`, w * 0.04, h * 0.81);
+
+  // IP / Cluster status
+  ctx.font = `500 ${Math.round(h * 0.09)}px ${MONO}`;
+  ctx.fillStyle = "#a0d2eb";
+  ctx.fillText(node?.online ? "Cluster: SYNC [Port 4210]" : "Cluster: DISCONNECTED", w * 0.04, h * 0.96);
+}
+
+/** The Node 2 Supervisor SSD1306 OLED display: Shows cluster supervisor state, ML model, and alert */
+export function drawOled(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const st = useHub.getState();
+  const snap = st.snap;
+  const gw = snap?.gateway;
+  const node = snap?.node;
+
+  // deep black background
+  ctx.fillStyle = "#020306";
+  ctx.fillRect(0, 0, w, h);
+
+  // Top header bar (inverted OLED look)
+  const headerH = Math.round(h * 0.18);
+  ctx.fillStyle = "#29b6f6";
+  ctx.fillRect(0, 0, w, headerH);
+
+  ctx.font = `700 ${Math.round(h * 0.12)}px ${MONO}`;
+  ctx.fillStyle = "#000a14";
+  ctx.textAlign = "left";
+  ctx.fillText("NODE-2: SUPERV", w * 0.04, headerH * 0.75);
+
+  ctx.textAlign = "right";
+  const wifiText = gw?.online ? "WIFI:OK" : "WIFI:DISC";
+  ctx.fillText(wifiText, w * 0.96, headerH * 0.75);
+
+  // OLED phosphor text
+  const oledColor = "#8fe7ff";
+  ctx.fillStyle = oledColor;
+  ctx.shadowColor = "rgba(143,231,255,0.6)";
+  ctx.shadowBlur = 4;
+  ctx.textAlign = "left";
+  ctx.font = `600 ${Math.round(h * 0.11)}px ${MONO}`;
+
+  const seq = node?.seq ?? 0;
+  const sensor = node?.sensor ?? 0;
+  ctx.fillText(`Node 1: #${seq} IR:${sensor}`, w * 0.04, h * 0.36);
+
+  ctx.fillText("Model: RANDOM_FOREST", w * 0.04, h * 0.52);
+  ctx.fillText("Cluster: 4 NODES SYNC", w * 0.04, h * 0.68);
+
+  const gwAlert = gw?.alert || (node?.loss && node.loss > 15 ? "PREDICTIVE_FAILOVER" : "NOMINAL");
+  ctx.fillText(`Risk: ${gwAlert === "NOMINAL" ? "LOW (1.8%)" : "EVAL (FAILOVER)"}`, w * 0.04, h * 0.84);
+
+  // Line 5: Forwarding status
+  ctx.font = `500 ${Math.round(h * 0.09)}px ${MONO}`;
+  ctx.fillStyle = "#5cb8d6";
+  ctx.fillText(gw?.online ? "Cluster Link: SUPERVISING" : "Supervisor: STANDBY", w * 0.04, h * 0.97);
+  ctx.shadowBlur = 0;
+}

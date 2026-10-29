@@ -61,7 +61,7 @@
 
   <rect x="440" y="104" width="180" height="54" rx="12" fill="#201a10" stroke="#ff9f0a"/>
   <text x="530" y="126" text-anchor="middle" class="big" fill="#ff9f0a">NODE B</text>
-  <text x="530" y="144" text-anchor="middle" class="lblm">ESP32 · 433 RX + relay</text>
+  <text x="530" y="144" text-anchor="middle" class="lblm">ESP8266 · 433 RX + OLED</text>
 
   <rect x="860" y="55" width="180" height="76" rx="12" fill="#10201c" stroke="#3fd0b5"/>
   <text x="950" y="82" text-anchor="middle" class="big" fill="#3fd0b5">LAPTOP</text>
@@ -178,77 +178,23 @@
 <div class="caution"><b>GPIO 34 is deliberate</b> — it's an ADC1 pin. ADC2 pins stop reading the instant Wi-Fi turns on, so the analog sensor must stay on ADC1 (GPIO 32–39, input-only).</div>
 
 <table>
-  <tr><th>Component</th><th>Pin → ESP32</th></tr>
-  <tr><td>OLED SSD1306</td><td>VCC→<code>3V3</code> · GND→<code>GND</code> · SCL→<code>GPIO22</code> · SDA→<code>GPIO21</code></td></tr>
+  <tr><th>Component</th><th>Pin → ESP32 (Node A)</th></tr>
   <tr><td>FS1000A 433 TX</td><td>VCC→<code>VIN (5V)</code> · GND→<code>GND</code> · DATA→<code>GPIO17</code> · ANT→17.3 cm wire</td></tr>
-  <tr><td>Buzzer module</td><td>VCC→<code>3V3</code> · GND→<code>GND</code> · I/O→<code>GPIO25</code></td></tr>
+  <tr><td>Buzzer module (Active)</td><td>VCC→<code>3V3</code> · GND→<code>GND</code> · I/O→<code>GPIO25</code></td></tr>
   <tr><td>IR proximity module</td><td>VCC→<code>3V3</code> · GND→<code>GND</code> · AO (analog out)→<code>GPIO34</code></td></tr>
+  <tr><td>Momentary Pushbutton</td><td>Pin 1→<code>GPIO27</code> · Pin 2→<code>GND</code> (Internal pullup active)</td></tr>
 </table>
 
-<h2>Node B — radio gateway (ESP32)</h2>
-<div class="card">
-<svg viewBox="0 0 900 470">
-  <line x1="430" y1="80" x2="430" y2="410" stroke="#ff5d5d" stroke-width="3"/>
-  <text x="430" y="73" text-anchor="middle" class="lbl" fill="#ff5d5d">+3V3</text>
-  <line x1="458" y1="80" x2="458" y2="430" stroke="#7a8594" stroke-width="3"/>
-  <text x="470" y="73" class="lbl" fill="#7a8594">GND</text>
-
-  <!-- ESP32 board -->
-  <rect x="70" y="90" width="172" height="330" rx="10" fill="#15232e" stroke="#2f4254"/>
-  <rect x="104" y="75" width="40" height="18" rx="3" fill="#9aa4ad"/><text x="124" y="69" text-anchor="middle" class="lblm">USB</text>
-  <rect x="86" y="103" width="84" height="56" rx="4" fill="#0d1620" stroke="#3a4b5c"/><text x="128" y="135" text-anchor="middle" class="lblm">WROOM</text>
-  <text x="156" y="405" text-anchor="middle" class="big" fill="#f0bd7a">ESP32 · NODE B</text>
-  <text x="156" y="180" text-anchor="middle" class="lblm">GPIO2 = onboard LED</text>
-
-  <g font-size="11">
-    <rect x="242" y="107" width="58" height="16" rx="3" fill="#2a2416" stroke="#c9a94a"/><text x="271" y="119" text-anchor="middle">3V3</text><circle cx="300" cy="115" r="3.5" fill="#ff5d5d"/>
-    <rect x="242" y="147" width="58" height="16" rx="3" fill="#2a2416" stroke="#c9a94a"/><text x="271" y="159" text-anchor="middle">VIN</text><circle cx="300" cy="155" r="3.5" fill="#ff9f0a"/>
-    <rect x="242" y="207" width="58" height="16" rx="3" fill="#2a2416" stroke="#c9a94a"/><text x="271" y="219" text-anchor="middle">G4</text><circle cx="300" cy="215" r="3.5" fill="#3fd0b5"/>
-    <rect x="242" y="257" width="58" height="16" rx="3" fill="#2a2416" stroke="#c9a94a"/><text x="271" y="269" text-anchor="middle">G13</text><circle cx="300" cy="265" r="3.5" fill="#c58cff"/>
-    <rect x="242" y="382" width="58" height="16" rx="3" fill="#2a2416" stroke="#c9a94a"/><text x="271" y="394" text-anchor="middle">GND</text><circle cx="300" cy="390" r="3.5" fill="#7a8594"/>
-  </g>
-
-  <!-- XY-MK-5V receiver -->
-  <rect x="500" y="100" width="160" height="92" rx="8" fill="#0f2b24" stroke="#2f6b5c"/>
-  <text x="580" y="178" text-anchor="middle" class="lblm">XY-MK-5V 433 RX</text>
-  <path d="M646,100 q10,-20 20,-10 q10,10 20,-8" fill="none" stroke="#ffd166" stroke-width="2"/>
-  <text x="694" y="88" class="lbl" fill="#ffd166">ANT 17.3cm</text>
-  <g font-size="10">
-    <circle cx="500" cy="116" r="3.5" fill="#ff5d5d"/><text x="508" y="119">VCC (3V3!)</text>
-    <circle cx="500" cy="136" r="3.5" fill="#7a8594"/><text x="508" y="139">GND</text>
-    <circle cx="500" cy="156" r="3.5" fill="#3fd0b5"/><text x="508" y="159">DATA</text>
-  </g>
-
-  <!-- Relay module -->
-  <rect x="500" y="250" width="200" height="120" rx="8" fill="#10213a" stroke="#2f4a7a"/>
-  <rect x="620" y="268" width="60" height="40" rx="3" fill="#2a3550" stroke="#4a5e8a"/><text x="650" y="292" text-anchor="middle" class="lblm">relay</text>
-  <text x="580" y="360" text-anchor="middle" class="lblm">5V RELAY MODULE</text>
-  <g font-size="10">
-    <circle cx="500" cy="268" r="3.5" fill="#ff9f0a"/><text x="508" y="271">VCC (5V)</text>
-    <circle cx="500" cy="288" r="3.5" fill="#7a8594"/><text x="508" y="291">GND</text>
-    <circle cx="500" cy="308" r="3.5" fill="#c58cff"/><text x="508" y="311">IN</text>
-    <circle cx="700" cy="330" r="3.5" fill="#555"/><text x="650" y="334" text-anchor="end" fill="#777">COM/NO/NC — unused</text>
-  </g>
-
-  <!-- wires -->
-  <path d="M300,115 H430" stroke="#ff5d5d" stroke-width="2.5" fill="none"/><circle cx="430" cy="115" r="3" fill="#ff5d5d"/>
-  <path d="M500,116 H430" stroke="#ff5d5d" stroke-width="2.5" fill="none"/><circle cx="430" cy="116" r="3" fill="#ff5d5d"/>
-  <path d="M300,390 H458" stroke="#7a8594" stroke-width="2.5" fill="none"/><circle cx="458" cy="390" r="3" fill="#7a8594"/>
-  <path d="M500,136 H458" stroke="#7a8594" stroke-width="2.5" fill="none"/><circle cx="458" cy="136" r="3" fill="#7a8594"/>
-  <path d="M500,288 H458" stroke="#7a8594" stroke-width="2.5" fill="none"/><circle cx="458" cy="288" r="3" fill="#7a8594"/>
-  <path d="M300,155 L400,155 L400,268 L500,268" stroke="#ff9f0a" stroke-width="2.5" fill="none"/> <!-- VIN to relay -->
-  <path d="M300,215 L480,215 L480,156 L500,156" stroke="#3fd0b5" stroke-width="2.5" fill="none"/> <!-- G4 data -->
-  <path d="M300,265 L410,265 L410,308 L500,308" stroke="#c58cff" stroke-width="2.5" fill="none"/> <!-- G5 relay IN -->
-</svg>
-</div>
-<div class="caution"><b>Power the 433 receiver from 3V3, not 5 V.</b> At 5 V its DATA line outputs ~5 V and would stress/damage the ESP32's 3.3 V input. 3V3 slightly reduces range, which is fine for a desk demo.</div>
+<h2>Node B — radio gateway (ESP8266)</h2>
+<div class="caution"><b>Power the 433 receiver from 3V3, not 5 V.</b> At 5 V its DATA line outputs ~5 V and would stress/damage the ESP8266's 3.3 V input. 3V3 provides safe 3.3 V logic levels and is more than sufficient for desk range.</div>
 
 <table>
-  <tr><th>Component</th><th>Pin → ESP32</th></tr>
-  <tr><td>XY-MK-5V 433 RX</td><td>VCC→<code>3V3</code> · GND→<code>GND</code> · DATA→<code>GPIO4</code> · ANT→17.3 cm wire</td></tr>
-  <tr><td>5 V relay module</td><td>VCC→<code>VIN (5V)</code> · GND→<code>GND</code> · IN→<code>GPIO5</code> · COM/NO/NC left empty</td></tr>
+  <tr><th>Component</th><th>Pin → ESP8266 (Node B / NodeMCU)</th></tr>
+  <tr><td>SSD1306 I²C OLED (0x3C)</td><td>VCC→<code>3V3</code> · GND→<code>GND</code> · SCL→<code>D1 (GPIO5)</code> · SDA→<code>D2 (GPIO4)</code></td></tr>
+  <tr><td>XY-MK-5V 433 RX</td><td>VCC→<code>3V3</code> (Safe logic) · GND→<code>GND</code> · DATA→<code>D5 (GPIO14)</code> · ANT→17.3 cm wire</td></tr>
+  <tr><td>RadioHead Reserved</td><td>D6 (GPIO12) & D7 (GPIO13) reserved by RH_ASK driver (leave unconnected)</td></tr>
 </table>
-<div class="tip">The relay is only a demo indicator — nothing wired through its contacts. You'll hear the click and see its LED (and GPIO2's onboard LED) when Node A goes to fallback.</div>
+<div class="tip">Node B receives 16-byte frames from Node A over 433 MHz, validates CRC16 and sequence integrity, renders live metrics on the OLED, and forwards JSON telemetry over Wi-Fi UDP and USB Serial to the laptop.</div>
 
 <h2>Node C — air watcher (ESP32, optional)</h2>
 <div class="card" style="padding:16px 18px">
@@ -258,13 +204,11 @@
 
 <h2>Build order</h2>
 <ol>
-  <li>Breadboard <b>Node A</b>: set up a +3V3 rail and a GND rail. Wire OLED, FS1000A (VCC to <b>5V/VIN</b>), the buzzer, then the IR proximity module’s analog out (AO) into GPIO 34. Solder a 17.3 cm wire to the FS1000A ANT pad.</li>
-  <li>Breadboard <b>Node B</b> (second ESP32): receiver (VCC to <b>3V3</b>) DATA→GPIO 4, relay IN→GPIO 5. Solder a 17.3 cm wire to the receiver ANT pad.</li>
+  <li>Breadboard <b>Node A</b> (ESP32): connect FS1000A transmitter (VCC to <b>VIN/5V</b>, DATA to <b>GPIO 17</b>), active buzzer (I/O to <b>GPIO 25</b>), IR sensor analog out (AO to <b>GPIO 34</b>), and momentary pushbutton between <b>GPIO 27</b> and <b>GND</b>. Solder a 17.3 cm wire to the FS1000A ANT pad.</li>
+  <li>Breadboard <b>Node B</b> (ESP8266): connect SSD1306 OLED (SDA to <b>D2/GPIO4</b>, SCL to <b>D1/GPIO5</b>, VCC to <b>3V3</b>, GND to <b>GND</b>), XY-MK-5V receiver (VCC to <b>3V3</b> for safe logic level, DATA to <b>D5/GPIO14</b>, GND to <b>GND</b>). Solder a 17.3 cm wire to the receiver ANT pad.</li>
   <li>Keep the two 433 antennas <b>~20 cm apart</b> and vertical.</li>
-  <li>Flash each board (see <code>README.md</code>). Power one at a time; find ports with <code>ls /dev/ttyUSB*</code>.</li>
-  <li>Power Node A from a <b>power bank</b> so it's visibly wireless.</li>
-  <li>Open the firewall port, start the server, open <code>http://localhost:8500</code>.</li>
+  <li>Flash each board (see <code>README.md</code>). Find ports with <code>ls /dev/ttyUSB*</code>.</li>
+  <li>Power Node A from a power bank or USB, and Node B from USB.</li>
 </ol>
-<div class="tip"><b>Smoke test:</b> power everything, open the dashboard, switch the hotspot off. The banner should go amber (433 MHz RADIO), the relay clicks, "readings lost" stays 0.</div>
 </body>
 </html>

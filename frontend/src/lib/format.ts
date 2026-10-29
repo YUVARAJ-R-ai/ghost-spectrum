@@ -17,7 +17,7 @@ export const DIAG_GIST: Record<Diag, string> = {
 // Hex colours shared between the DOM and the WebGL scene
 export const COLOR = {
   wifi: "#6cb8ff", radio: "#ffb347", both: "#4be3c1", bad: "#ff5c6c", good: "#52e08f",
-  violet: "#a98bff", ink: "#050507",
+  warn: "#ff8a4c", violet: "#a98bff", ink: "#050507",
 } as const;
 
 export const DIAG_COLOR: Record<Diag, string> = {

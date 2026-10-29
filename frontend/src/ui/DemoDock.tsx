@@ -38,14 +38,20 @@ export default function DemoDock() {
                     Play story <span className="ico !h-6 !w-6"><Play size={11} weight="fill" /></span>
                   </button>
                 </div>
-                <div className="scroll-thin -mx-1 mt-2.5 flex flex-wrap gap-1">
+                <div className="scroll-thin -mx-1 mt-2.5 flex flex-wrap gap-1 max-h-[120px] overflow-y-auto">
                   {SCENARIOS.map((s) => (
                     <button key={s.id} className={`chip ${scenario === s.id ? "on" : ""}`} onClick={() => pick(s.id)}>{s.label}</button>
                   ))}
                 </div>
+                {SCENARIOS.find((s) => s.id === scenario)?.desc && (
+                  <p className="dock-cap mt-2 text-[11.5px] leading-snug" style={{ color: "var(--muted)" }}>
+                    {SCENARIOS.find((s) => s.id === scenario)?.desc}
+                  </p>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
+
           <div className="mt-3.5 border-t pt-3" style={{ borderColor: "var(--hair)" }}>
             <div className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-2 text-[12px] font-medium" style={{ color: protect ? "var(--ink)" : "var(--bad)" }}>

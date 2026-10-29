@@ -104,8 +104,9 @@ export default function Incidents() {
             <h2 className="mt-6 text-[24px] font-semibold tracking-[-0.03em]">No outages <span className="serif" style={{ fontSize: "1.1em" }}>yet</span></h2>
             <p className="mt-2 max-w-[44ch] text-[13.5px] leading-relaxed" style={{ color: "var(--muted)" }}>The link has been healthy. When it breaks and recovers, the sealed report appears here.</p>
             {source === "demo" && (
-              <button className="pill solid mt-7" onClick={() => { useDemo.getState().pick("fading"); setView("stage"); }}>Break the link <span className="ico"><ArrowRight size={14} weight="bold" /></span></button>
+              <button className="pill solid mt-7" onClick={() => { useDemo.getState().pick("wifi_degrading"); setView("stage"); }}>Break the link <span className="ico"><ArrowRight size={14} weight="bold" /></span></button>
             )}
+
           </div></Bezel>
         </motion.div>
       ) : (

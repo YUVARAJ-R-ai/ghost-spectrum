@@ -18,17 +18,85 @@ export interface Report {
   readings_lost: number; sha256: string;
 }
 
+export type NetworkState =
+  | "BOOT"
+  | "WIFI_CONNECTING"
+  | "WIFI_ACTIVE"
+  | "WIFI_DEGRADED"
+  | "RADIO_ACTIVE"
+  | "RECOVERY_PENDING"
+  | "RECOVERY_PROBATION"
+  | "DEGRADED_OFFLINE";
+
+export type ActiveSource = "NODE_A_WIFI" | "NODE_B_RADIO" | "NONE" | "SIMULATED";
+
+export type CmdStatus = "sent" | "ack" | "timeout" | "unreachable";
+
+export interface CmdState {
+  id: number;
+  cmd: string;
+  sent_at: number;
+  status: CmdStatus;
+  detail?: string;
+  ack_at?: number;
+  rtt_ms?: number;
+}
+
+export interface HubEvent {
+  t: number;
+  type: string;
+  msg: string;
+  source: string;
+}
+
 export interface Snapshot {
   now: number;
-  node: { online: boolean; mode?: "wifi" | "radio" | null; why?: string | null; path?: string | null; reason: string };
+  state?: NetworkState;
+  source_type?: "HARDWARE" | "SIMULATED";
+  active_source?: ActiveSource;
+  node: {
+    online: boolean;
+    mode?: "wifi" | "radio" | null;
+    why?: string | null;
+    path?: string | null;
+    reason: string;
+    seq?: number;
+    sensor?: number;
+    rssi?: number;
+    rtt?: number;
+    loss?: number;
+    ch?: number;
+  };
   wifi_age: number | null;
   radio_age: number | null;
-  gateway: { online: boolean; relay?: number; ok?: number; bad?: number };
-  sentinel: { online: boolean; port?: string | null };
+  gateway: {
+    online: boolean;
+    relay?: number;
+    ok?: number;
+    bad?: number;
+    dup?: number;
+    last?: number;
+    health?: number;
+    alert?: string;
+    ip?: string;
+  };
+  sentinel: {
+    online: boolean;
+    port?: string | null;
+    fault?: number;
+    anomaly?: string;
+    rssi?: number;
+    ch?: number;
+    ip?: string;
+  };
   air: { ch?: number; frames_per_s?: number; deauth_per_s?: number };
   readings: [number, number, number, string][];   // seq, t, sensor, paths
   lost: number;
   total: number;
+  wifi_count?: number;
+  radio_count?: number;
+  cmd_state?: CmdState | null;
+  events?: HubEvent[];
   features: Partial<Features>;
   probs: Record<Diag, number>;
   held: Diag;
@@ -41,3 +109,4 @@ export interface Snapshot {
 }
 
 export type Source = "live" | "demo";
+

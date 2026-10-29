@@ -95,9 +95,9 @@ cp firmware/mission_node_esp32/include/secrets.example.h firmware/mission_node_e
 $EDITOR firmware/mission_node_esp32/include/secrets.h
 
 # 2. Flash (plug one board at a time; check the port with `ls /dev/ttyUSB* /dev/ttyACM*`)
-pio run -d firmware/mission_node_esp32 -t upload --upload-port /dev/ttyUSB0   # Node A
-pio run -d firmware/gateway_node_esp32  -t upload --upload-port /dev/ttyUSB1  # Node B
-pio run -d firmware/sentinel_esp32     -t upload --upload-port /dev/ttyUSB0   # Node C (optional)
+pio run -d firmware/mission_node_esp32 -t upload --upload-port /dev/ttyUSB0   # Node A (ESP32)
+pio run -d firmware/gateway_node_esp8266 -t upload --upload-port /dev/ttyUSB1 # Node B (ESP8266)
+pio run -d firmware/sentinel_esp32     -t upload --upload-port /dev/ttyUSB0   # Node C (optional ESP32)
 
 # 3. Let Node A's UDP packets through the NixOS firewall (until reboot)
 sudo iptables -I nixos-fw 1 -p udp --dport 4210 -j nixos-fw-accept
@@ -182,8 +182,9 @@ python3 tests/test_hub.py      # merge / lost-count / agent decision self-checks
 
 | Path | What |
 |---|---|
-| `firmware/mission_node_esp32` | Node A: Wi-Fi + link metrics + reflex + store-and-forward + 433 MHz TX |
-| `firmware/gateway_node_esp32` | Node B: 433 MHz RX → JSON over USB, relay |
+| `firmware/mission_node_esp32` | Node A: ESP32 sensor + Wi-Fi UDP + pushbutton fallback + 433 MHz TX |
+| `firmware/gateway_node_esp8266` | Node B: ESP8266 433 MHz RX → SSD1306 OLED + Wi-Fi UDP + USB Serial |
+| `firmware/common` | Shared 16-byte radio protocol header (`radio_protocol.h`) with CRC16-CCITT |
 | `firmware/sentinel_esp32` | Node C: promiscuous Wi-Fi frame counter |
 | `server/app.py` | Hub: UDP + serial ingest, path merging, lost counting, dashboard websocket, data recording |
 | `server/brain.py` | Features, rule fallback, model loading, the agent |

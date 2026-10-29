@@ -192,6 +192,95 @@ export default function Timeline() {
           <Tile key="l" label="Packet loss" value={f?.loss_mean !== undefined ? f.loss_mean.toFixed(0) : "–"} unit="%" data={recent.map((p) => p.loss)} color={COLOR.bad} min={0} max={100} />,
         ].map((t, i) => <motion.div key={i} {...rise(i + 1)}>{t}</motion.div>)}
       </div>
+      <motion.div {...rise(5)}>
+        <EventLog />
+      </motion.div>
     </Shell>
   );
 }
+
+function EventLog() {
+  const events = useHub((s) => s.snap?.events ?? []);
+  const [filter, setFilter] = useState<string>("all");
+
+  const filtered = events.filter((e) => {
+    if (filter === "all") return true;
+    if (filter === "cmd") return e.type.includes("COMMAND") || e.type.includes("RATE");
+    if (filter === "fail") return e.type.includes("LOST") || e.type.includes("FAIL") || e.type.includes("TIMEOUT") || e.type.includes("OFFLINE");
+    if (filter === "radio") return e.type.includes("RADIO") || e.type.includes("BUTTON");
+    return true;
+  });
+
+  return (
+    <div className="mt-4">
+      <Bezel tight lit={false}>
+        <div className="p-4 md:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3" style={{ borderColor: "var(--hair)" }}>
+            <div className="flex items-center gap-2">
+              <span className="eyebrow"><span className="dot breathe" />System Event Stream</span>
+              <span className="mono text-[11px] opacity-60">({events.length} events logged)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {[
+                { id: "all", label: "All" },
+                { id: "cmd", label: "Commands" },
+                { id: "radio", label: "Radio / HW" },
+                { id: "fail", label: "Failures" },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={`chip !px-2.5 !py-1 !text-[11px] ${filter === f.id ? "on" : ""}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="scroll-thin mt-3 max-h-[280px] overflow-y-auto space-y-1.5">
+            {filtered.length === 0 ? (
+              <div className="py-8 text-center text-[12px] opacity-40">No matching events in memory</div>
+            ) : (
+              filtered.map((e, i) => {
+                const date = new Date(e.t * 1000);
+                const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}.${String(Math.floor((e.t % 1) * 1000)).padStart(3, "0")}`;
+                const isCmd = e.type.includes("COMMAND");
+                const isFail = e.type.includes("LOST") || e.type.includes("FAIL") || e.type.includes("TIMEOUT") || e.type.includes("OFFLINE");
+                const isRadio = e.type.includes("RADIO") || e.type.includes("BUTTON");
+                const typeColor = isFail ? "var(--bad)" : isCmd ? "var(--accent)" : isRadio ? "var(--radio)" : "var(--good)";
+
+                return (
+                  <div
+                    key={`${e.t}-${i}`}
+                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-[12px] transition-colors"
+                    style={{ background: "rgba(255,255,255,.02)", border: "1px solid var(--hair)" }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="mono text-[11px] opacity-40 shrink-0">{timeStr}</span>
+                      <span
+                        className="mono text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                        style={{
+                          background: `color-mix(in srgb, ${typeColor} 14%, transparent)`,
+                          color: typeColor,
+                          border: `1px solid color-mix(in srgb, ${typeColor} 28%, transparent)`,
+                        }}
+                      >
+                        {e.type}
+                      </span>
+                      <span className="truncate text-[12px] text-[var(--ink)]">{e.msg}</span>
+                    </div>
+                    <span className="mono text-[10px] opacity-50 shrink-0 px-1 rounded bg-[rgba(255,255,255,.05)]">
+                      {e.source}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </Bezel>
+    </div>
+  );
+}
+

@@ -63,16 +63,16 @@ export default function Header() {
             </svg>
           </div>
           <div className="leading-tight">
-            <div className="text-[15px] font-semibold tracking-tight">Link Doctor</div>
-            <div className="text-[11px]" style={{ color: "var(--muted)" }}>knows <span className="serif text-[13px]" style={{ color: "var(--ink)" }}>why</span> it broke</div>
+            <div className="text-[15px] font-semibold tracking-tight">Self-Healing IoT Cluster</div>
+            <div className="text-[11px]" style={{ color: "var(--muted)" }}>predictive <span className="serif text-[13px]" style={{ color: "var(--ink)" }}>edge-AI</span> resilience</div>
           </div>
         </div>
 
         <div className="hit flex items-center gap-2 md:gap-4">
           <div className="hidden items-center gap-3.5 min-[1400px]:flex">
-            <Dot on={!!snap?.node.online} label="Node A" title="IoT device" />
-            <Dot on={!!snap?.gateway.online} label="Gateway" title="Node B · 433 MHz receiver" />
-            <Dot on={!!snap?.sentinel.online} label="Air watcher" title="Node C · optional" />
+            <Dot on={!!snap?.node.online} label="Node 1: Sensor" title="ESP8266 + OLED #1 + IR" />
+            <Dot on={!!snap?.gateway.online} label="Node 2: Supervisor" title="ESP8266 + OLED #2 + Alert" />
+            <Dot on={!!snap?.sentinel.online} label="Node 3: Sentinel" title="ESP32 Fault/Channel Sentinel" />
           </div>
           <div className="bezel tight"><div className="core flex items-center p-0.5" style={{ borderRadius: 999 }}>
             {(["live", "demo"] as const).map((k) => {
@@ -86,8 +86,9 @@ export default function Header() {
                   {on && <motion.span layoutId="srcpill" className="absolute inset-0 rounded-full" style={{ background: "var(--accent-soft)" }} transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                   <span className="relative flex items-center gap-1.5">
                     {on && <i className="inline-block h-1.5 w-1.5 rounded-full breathe" style={{ background: "var(--accent)", boxShadow: "0 0 8px var(--accent)" }} />}
-                    {k}
+                    {k === "live" ? "Live HW" : "Demo Sim"}
                   </span>
+
                 </button>
               );
             })}

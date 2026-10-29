@@ -144,7 +144,10 @@ class Agent:
             self.alert = "deauth"
             self.note(f"Air watcher sees {air['deauth_per_s']:.0f} deauth frames/s on ch {air.get('ch')}",
                       "Someone is forcing devices off this network: an attack, not a fault",
-                      "Flagged for a human; node will ride it out on radio")
+                      "Flagged for a human; cluster alerted")
+        elif air.get("deauth_per_s", 0) <= 20 and self.alert == "deauth":
+            self.alert = None
+            self.note("Air watcher: RF channel clear", "Deauthentication burst ceased", "Channel status nominal")
 
         if stable != "nominal":
             self._open_incident(stable, conf, node_mode)
