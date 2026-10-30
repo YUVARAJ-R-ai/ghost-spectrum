@@ -17,7 +17,7 @@
 #define SCL_PIN 5 // D1 on NodeMCU
 
 // Hardware Pin Definitions
-#define BUZZER_PIN 12 // D6 on NodeMCU
+#define BUZZER_PIN 12 // D6 on NodeMCU (Active HIGH)
 #define BUTTON_PIN 14 // D5 on NodeMCU (Active LOW)
 #define STATUS_LED 2  // Built-in LED on ESP-12 (Active LOW)
 
@@ -33,6 +33,7 @@ static unsigned long last_heard_node1 = 0;
 static bool alert_active = false;
 static unsigned long alert_start = 0;
 static unsigned long last_ir_beep = 0;
+static char alert_reason[32] = "NOMINAL";
 
 void beep(int count, int dur_ms) {
     for (int i = 0; i < count; i++) {
@@ -41,6 +42,29 @@ void beep(int count, int dur_ms) {
         digitalWrite(BUZZER_PIN, LOW);
         if (i < count - 1) delay(dur_ms);
     }
+}
+
+void send_ack(const char* cmd_name, const char* status, const IPAddress& remote_ip, uint16_t remote_port) {
+    StaticJsonDocument<256> doc;
+    doc["n"] = "2";
+    doc["node_id"] = "NODE_2_SUPERVISOR";
+    doc["cmd_ack"] = cmd_name;
+    doc["status"] = status;
+    doc["alert"] = alert_active ? alert_reason : "NOMINAL";
+    doc["ip"] = WiFi.localIP().toString();
+
+    char buf[256];
+    size_t len = serializeJson(doc, buf);
+
+    if (remote_port > 0) {
+        udp.beginPacket(remote_ip, remote_port);
+        udp.write((const uint8_t*)buf, len);
+        udp.endPacket();
+    }
+
+    udp.beginPacket(HUB_IP, UDP_PORT);
+    udp.write((const uint8_t*)buf, len);
+    udp.endPacket();
 }
 
 void setup() {
@@ -90,6 +114,7 @@ void setup() {
     }
 
     udp.begin(UDP_PORT);
+    Serial.printf("[Node-2] UDP socket listening on %d\n", UDP_PORT);
 }
 
 void update_oled() {
@@ -99,26 +124,36 @@ void update_oled() {
     bool node1_alive = (now - last_heard_node1 < 2500) && (last_heard_node1 > 0);
 
     display.clearDisplay();
-    // Inverted Header Banner
-    display.fillRect(0, 0, 128, 12, SSD1306_WHITE);
-    display.setTextColor(SSD1306_BLACK);
-    display.setCursor(2, 2);
-    display.print(F("NODE-2: SUPERVISOR"));
-    display.setCursor(82, 2);
-    display.print(F("AI-CORE"));
-
-    display.setTextColor(SSD1306_WHITE);
 
     if (alert_active) {
+        // Threat Alert Screen
+        display.fillRect(0, 0, 128, 12, SSD1306_WHITE);
+        display.setTextColor(SSD1306_BLACK);
+        display.setCursor(2, 2);
+        display.print(F("! THREAT DETECTED !"));
+
+        display.setTextColor(SSD1306_WHITE);
         display.setCursor(0, 16);
-        display.print(F(">>> PREDICTIVE FAILOVER"));
+        display.printf("CAUSE: %s", alert_reason);
+
         display.setCursor(0, 28);
         display.print(F("ACTION: RE-ROUTING UDP"));
+
         display.setCursor(0, 40);
-        display.print(F("EDGE ML: CONF 94.8%"));
+        display.print(F("LINK: DECENTRALIZED"));
+
         display.setCursor(0, 52);
-        display.print(F("HEALTH: 76% DEGRADED"));
+        display.printf("BUZZER: ACTIVE WARBLE");
     } else {
+        // Nominal Supervisor Screen
+        display.fillRect(0, 0, 128, 12, SSD1306_WHITE);
+        display.setTextColor(SSD1306_BLACK);
+        display.setCursor(2, 2);
+        display.print(F("NODE-2: SUPERVISOR"));
+        display.setCursor(82, 2);
+        display.print(F("AI-CORE"));
+
+        display.setTextColor(SSD1306_WHITE);
         display.setCursor(0, 16);
         if (node1_alive) {
             display.printf("Node 1: IR=%4d [#%lu]", node1_sensor, node1_seq);
@@ -150,16 +185,34 @@ void loop() {
         if (!alert_active) {
             alert_active = true;
             alert_start = now;
-            digitalWrite(BUZZER_PIN, HIGH);
-            delay(120);
-            digitalWrite(BUZZER_PIN, LOW);
-            Serial.println(F("[Node-2] Manual alert triggered: FAILOVER_ARMED"));
+            strncpy(alert_reason, "MANUAL BUTTON (D5)", sizeof(alert_reason));
+            beep(2, 90);
+            Serial.println(F("[Node-2] Manual alert triggered on D5"));
+
+            // Broadcast manual trigger to entire cluster
+            StaticJsonDocument<128> bdoc;
+            bdoc["n"] = "2";
+            bdoc["cmd"] = "threat";
+            bdoc["alert"] = "MANUAL_FAILOVER";
+            char bbuf[128];
+            size_t blen = serializeJson(bdoc, bbuf);
+            IPAddress bcast(255, 255, 255, 255);
+            udp.beginPacket(bcast, UDP_PORT);
+            udp.write((const uint8_t*)bbuf, blen);
+            udp.endPacket();
         }
     }
 
-    // Auto-clear alert after 1.5 seconds once object is removed
-    if (alert_active && now - alert_start > 1500) {
+    // Auto-clear alert timers:
+    // Manual/Operator alarms clear after 3500ms; Proximity chirps clear after 1200ms
+    if (alert_active && (now - alert_start > 3500) && strcmp(alert_reason, "SENTINEL: JAMMING") != 0) {
         alert_active = false;
+        strncpy(alert_reason, "NOMINAL", sizeof(alert_reason));
+    }
+    // Sentinel jamming clears if no jamming packet for 4500ms
+    if (alert_active && (now - alert_start > 4500) && strcmp(alert_reason, "SENTINEL: JAMMING") == 0) {
+        alert_active = false;
+        strncpy(alert_reason, "NOMINAL", sizeof(alert_reason));
     }
 
     // Ingest incoming UDP packets from cluster
@@ -172,8 +225,55 @@ void loop() {
             StaticJsonDocument<256> doc;
             DeserializationError err = deserializeJson(doc, packetBuffer);
             if (!err) {
+                // 1. Direct Command (from Hub, Chat/Voice Console, or curl)
+                if (doc.containsKey("cmd")) {
+                    const char* cmd = doc["cmd"] | "";
+                    IPAddress sender_ip = udp.remoteIP();
+                    uint16_t sender_port = udp.remotePort();
+                    Serial.printf("[Node-2] Received command: %s\n", cmd);
+
+                    if (strcmp(cmd, "buzzer") == 0 || strcmp(cmd, "alarm") == 0 || strcmp(cmd, "threat") == 0) {
+                        int val = doc["val"] | 1;
+                        int count = doc["count"] | 3;
+                        if (val != 0) {
+                            alert_active = true;
+                            alert_start = now;
+                            strncpy(alert_reason, "OPERATOR COMMAND", sizeof(alert_reason));
+                            beep(count, 80);
+                        } else {
+                            alert_active = false;
+                            digitalWrite(BUZZER_PIN, LOW);
+                            strncpy(alert_reason, "NOMINAL", sizeof(alert_reason));
+                        }
+                        send_ack("buzzer", "ok", sender_ip, sender_port);
+                    }
+                    else if (strcmp(cmd, "clear") == 0 || strcmp(cmd, "reset") == 0) {
+                        alert_active = false;
+                        digitalWrite(BUZZER_PIN, LOW);
+                        strncpy(alert_reason, "NOMINAL", sizeof(alert_reason));
+                        send_ack("clear", "ok", sender_ip, sender_port);
+                    }
+                }
+
+                // 2. Peer-to-Peer Packet from Node 3 (Sentinel ESP32)
                 const char* n = doc["n"] | "";
-                if (strcmp(n, "1") == 0) {
+                if (strcmp(n, "3") == 0) {
+                    int fault = doc["fault"] | 0;
+                    if (fault == 1) {
+                        alert_active = true;
+                        alert_start = now;
+                        strncpy(alert_reason, "SENTINEL: JAMMING", sizeof(alert_reason));
+                        beep(3, 70); // Rapid warning siren
+                        Serial.println(F("[Node-2] >>> P2P ALERT: Node 3 Sentinel detected Jamming! <<<"));
+                    } else if (alert_active && strcmp(alert_reason, "SENTINEL: JAMMING") == 0) {
+                        alert_active = false;
+                        strncpy(alert_reason, "NOMINAL", sizeof(alert_reason));
+                        Serial.println(F("[Node-2] Node 3 Sentinel Jamming Cleared. Nominal."));
+                    }
+                }
+
+                // 3. Peer-to-Peer Packet from Node 1 (Sensor ESP8266)
+                else if (strcmp(n, "1") == 0) {
                     node1_sensor = doc["sensor"] | 0;
                     node1_seq = doc["seq"] | 0;
                     const char* pred = doc["ml_pred"] | "NOMINAL";
@@ -188,6 +288,7 @@ void loop() {
                             digitalWrite(BUZZER_PIN, LOW);
                             alert_active = true;
                             alert_start = now;
+                            strncpy(alert_reason, "PROXIMITY ALERT", sizeof(alert_reason));
                         }
                     }
                 }
@@ -214,7 +315,7 @@ void loop() {
         doc["bad"] = 0;
         doc["dup"] = 0;
         doc["health"] = alert_active ? 76 : 98;
-        doc["alert"] = alert_active ? "PREDICTIVE_FAILOVER" : "NOMINAL";
+        doc["alert"] = alert_active ? alert_reason : "NOMINAL";
         doc["rssi"] = WiFi.RSSI();
         doc["ip"] = WiFi.localIP().toString();
 

@@ -10,6 +10,7 @@ import Ripples from "./Ripples";
 
 const hexToVec = (h: string) => new THREE.Color(h);
 const AMBER = hexToVec(COLOR.radio), RED = hexToVec(COLOR.bad), BLUE = hexToVec(COLOR.wifi);
+const GREEN = hexToVec(COLOR.good), VIOLET = hexToVec(COLOR.violet);
 
 /** Entrance: nodes pop in one after another with a little overshoot. */
 function useEntrance(ref: React.RefObject<THREE.Object3D | null>, delay: number) {
@@ -311,8 +312,10 @@ export function Gateway() {
   useEntrance(g, 0.65);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    bead.current.color.copy(AMBER).multiplyScalar(0.3 + S.radio * 3 + Math.max(0, Math.sin(t * 9)) * S.radio);
-    rxLed.current.color.copy(AMBER).multiplyScalar(0.15 + (S.radio > 0.5 ? 3.5 : 0.4 * Math.sin(t * 3)));
+    const isAlarm = S.relay > 0.5;
+    const activeColor = isAlarm ? RED : (S.gw > 0.5 ? GREEN : AMBER);
+    bead.current.color.copy(activeColor).multiplyScalar(0.4 + (S.gw > 0.5 ? 2.5 : 0.4) + Math.max(0, Math.sin(t * 7)) * (isAlarm ? 2 : 0.5));
+    rxLed.current.color.copy(activeColor).multiplyScalar(0.2 + (S.gw > 0.5 ? 2.8 : 0.3));
     if (t - lastOled.current > 0.15) {
       lastOled.current = t;
       drawOled(ctx, 256, 128);
@@ -387,9 +390,9 @@ export function AirWatcher() {
   useEntrance(g, 1.0);
   useFrame(({ clock }, dt) => {
     sweep.current.rotation.z -= dt * (1.2 + S.deauth * 4);
-    tmp.copy(BLUE).lerp(RED, S.deauth);
-    sweepMat.current.color.copy(tmp).multiplyScalar(1.2);
-    sweepMat.current.opacity = 0.07 + S.deauth * 0.16;
+    tmp.copy(S.airOn > 0.5 ? VIOLET : BLUE).lerp(RED, S.deauth);
+    sweepMat.current.color.copy(tmp).multiplyScalar(1.2 + (S.airOn > 0.5 ? 1.0 : 0));
+    sweepMat.current.opacity = 0.08 + S.airOn * 0.08 + S.deauth * 0.2;
     g.current.position.x = POS.air.x + (S.deauth > 0.3 ? Math.sin(clock.elapsedTime * 55) * 0.012 : 0);
   });
   return (

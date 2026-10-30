@@ -51,5 +51,25 @@ export const zeroSensor = () => {
   return post("/api/cmd/zero_sensor");
 };
 
+export const sendChatCommand = async (text: string, engine: "auto" | "bedrock" | "jev" = "auto") => {
+  if (useHub.getState().source === "demo") {
+    const raw = text.toLowerCase();
+    if (raw.includes("jam") || raw.includes("deauth")) {
+      await sim.execCommand("trigger_alert");
+      return { reply: "⚡ [JEV Demo] Simulated jamming anomaly activated on channel 11.", action: "JAMMING", status: "ok", engine: "jev" };
+    }
+    if (raw.includes("clear") || raw.includes("re-arm")) {
+      await sim.execCommand("clear_alert");
+      return { reply: "⚡ [JEV Demo] All simulated alerts reset to nominal.", action: "CLEAR", status: "ok", engine: "jev" };
+    }
+    if (raw.includes("buzzer") || raw.includes("alarm")) {
+      await sim.execCommand("test_buzzer");
+      return { reply: "⚡ [JEV Demo] Supervisor buzzer alert tested in simulation.", action: "BUZZER", status: "ok", engine: "jev" };
+    }
+    return { reply: `⚡ [JEV Demo] Local agent executed: "${text}"`, action: "LOG", status: "ok", engine: "jev" };
+  }
+  return post("/api/chat/command", { text, engine });
+};
+
 export const getStatus = () => fetch("/api/status").then((r) => r.json());
 

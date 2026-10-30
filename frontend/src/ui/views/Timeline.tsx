@@ -27,22 +27,22 @@ function Chart({ range }: { range: number }) {
     const now = st.snap.now + (performance.now() - st.snapAt) / 1000;
     const L = 8, R = 46, T = 34, B = 28, pw = W - L - R, ph = H - T - B;
     const x = (t: number) => L + pw * (1 - (now - t) / range);
-    const ySensor = (v: number) => T + ph * (1 - v / 4095);
+    const yRtt = (v: number) => T + ph * (1 - Math.min(Math.max(v, 0), 200) / 200);
     const yRssi = (d: number) => T + ph * (1 - (d - RSSI_MIN) / (RSSI_MAX - RSSI_MIN));
 
     g.font = "500 10px 'Geist Mono Variable', monospace";
-    // drop zone: where the ESP32 loses the link
+    // drop zone: where signal drops
     const dz = g.createLinearGradient(0, yRssi(DROP), 0, yRssi(RSSI_MIN));
     dz.addColorStop(0, "rgba(255,92,108,0)"); dz.addColorStop(1, "rgba(255,92,108,.13)");
     g.fillStyle = dz; g.fillRect(L, yRssi(DROP), pw, yRssi(RSSI_MIN) - yRssi(DROP));
-    g.fillStyle = "rgba(255,92,108,.55)"; g.textAlign = "left"; g.fillText("DROP ZONE", L + 8, yRssi(DROP) + 14);
+    g.fillStyle = "rgba(255,92,108,.55)"; g.textAlign = "left"; g.fillText("DROP ZONE (-88dBm)", L + 8, yRssi(DROP) + 14);
 
     // grid + axes
     g.strokeStyle = "rgba(255,255,255,.05)"; g.lineWidth = 1; g.fillStyle = "#5b5f6e"; g.textAlign = "left";
     for (let i = 0; i <= 4; i++) {
       const yy = T + (ph * i) / 4;
       g.beginPath(); g.moveTo(L, yy); g.lineTo(L + pw, yy); g.stroke();
-      g.fillText(`${Math.round(RSSI_MAX - ((RSSI_MAX - RSSI_MIN) * i) / 4)}`, L + pw + 8, yy + 3);
+      g.fillText(`${Math.round(RSSI_MAX - ((RSSI_MAX - RSSI_MIN) * i) / 4)}dBm`, L + pw + 8, yy + 3);
     }
     g.textAlign = "center";
     const step = range <= 30 ? 5 : range <= 60 ? 10 : 30;
@@ -61,31 +61,31 @@ function Chart({ range }: { range: number }) {
       bg.addColorStop(0, col + "26"); bg.addColorStop(1, col + "05");
       g.fillStyle = bg; g.fillRect(x0, T, x1 - x0, ph);
       g.fillStyle = col; g.fillRect(x0, T, x1 - x0, 2);
-      if (x1 - x0 > 40) {  // label clipped to its own band so neighbours never overprint
+      if (x1 - x0 > 40) {
         g.save(); g.beginPath(); g.rect(x0, T, x1 - x0, 24); g.clip();
         g.textAlign = "left"; g.font = "600 10px 'Geist Variable', sans-serif"; g.fillText(DIAG_NAME[b.diag].toUpperCase(), x0 + 8, T + 16);
         g.restore(); g.font = "500 10px 'Geist Mono Variable', monospace";
       }
     }
 
-    // RSSI (right axis)
-    const hs = st.hist.filter((p) => p.t > now - range - 2);
+    // RSSI trace (dashed line)
+    const hs = st.hist.filter((p) => p.t > now - range - 2).sort((a, b) => a.t - b.t);
     if (hs.length > 1) {
-      g.strokeStyle = "rgba(236,238,245,.55)"; g.lineWidth = 1.4; g.setLineDash([2, 4]); g.beginPath();
+      g.strokeStyle = "rgba(236,238,245,.45)"; g.lineWidth = 1.4; g.setLineDash([2, 4]); g.beginPath();
       hs.forEach((p, i) => (i ? g.lineTo(x(p.t), yRssi(p.rssi)) : g.moveTo(x(p.t), yRssi(p.rssi))));
       g.stroke(); g.setLineDash([]);
     }
 
-    // sensor line, each segment tinted by the path that delivered it
-    const pts = st.sensors.filter((p) => p.t > now - range - 2).sort((a, b) => a.t - b.t);
+    // Network Ping / Latency line (ms)
     g.lineCap = "round"; g.lineJoin = "round";
-    for (let i = 1; i < pts.length; i++) {
-      const a = pts[i - 1], p = pts[i], col = PATH_COLOR[p.path];
-      const area = g.createLinearGradient(0, ySensor(Math.max(a.v, p.v)), 0, T + ph);
+    for (let i = 1; i < hs.length; i++) {
+      const a = hs[i - 1], p = hs[i];
+      const col = p.rtt > 150 ? COLOR.bad : p.rtt > 60 ? COLOR.warn : COLOR.wifi;
+      const area = g.createLinearGradient(0, yRtt(Math.max(a.rtt, p.rtt)), 0, T + ph);
       area.addColorStop(0, col + "30"); area.addColorStop(1, col + "00");
-      g.fillStyle = area; g.beginPath(); g.moveTo(x(a.t), ySensor(a.v)); g.lineTo(x(p.t), ySensor(p.v)); g.lineTo(x(p.t), T + ph); g.lineTo(x(a.t), T + ph); g.closePath(); g.fill();
+      g.fillStyle = area; g.beginPath(); g.moveTo(x(a.t), yRtt(a.rtt)); g.lineTo(x(p.t), yRtt(p.rtt)); g.lineTo(x(p.t), T + ph); g.lineTo(x(a.t), T + ph); g.closePath(); g.fill();
       g.strokeStyle = col; g.lineWidth = 2.4; g.shadowColor = col; g.shadowBlur = 12;
-      g.beginPath(); g.moveTo(x(a.t), ySensor(a.v)); g.lineTo(x(p.t), ySensor(p.v)); g.stroke();
+      g.beginPath(); g.moveTo(x(a.t), yRtt(a.rtt)); g.lineTo(x(p.t), yRtt(p.rtt)); g.stroke();
     }
     g.shadowBlur = 0;
 
@@ -97,20 +97,21 @@ function Chart({ range }: { range: number }) {
 
     // crosshair + tooltip
     const m = mouse.current, tp = tip.current;
-    if (m && tp && m.x > L && m.x < L + pw && pts.length) {
+    if (m && tp && m.x > L && m.x < L + pw && hs.length) {
       const tAt = now - range * (1 - (m.x - L) / pw);
-      let best = pts[0]; for (const p of pts) if (Math.abs(p.t - tAt) < Math.abs(best.t - tAt)) best = p;
-      const hbest = hs.length ? hs.reduce((a, b) => (Math.abs(b.t - tAt) < Math.abs(a.t - tAt) ? b : a)) : null;
+      let best = hs[0]; for (const p of hs) if (Math.abs(p.t - tAt) < Math.abs(best.t - tAt)) best = p;
       const bx = x(best.t);
+      const col = best.rtt > 150 ? COLOR.bad : best.rtt > 60 ? COLOR.warn : COLOR.wifi;
       g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = 1; g.beginPath(); g.moveTo(bx, T); g.lineTo(bx, T + ph); g.stroke();
-      g.fillStyle = PATH_COLOR[best.path]; g.shadowColor = PATH_COLOR[best.path]; g.shadowBlur = 14;
-      g.beginPath(); g.arc(bx, ySensor(best.v), 4.5, 0, 7); g.fill(); g.shadowBlur = 0;
+      g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 14;
+      g.beginPath(); g.arc(bx, yRtt(best.rtt), 4.5, 0, 7); g.fill(); g.shadowBlur = 0;
       tp.style.opacity = "1";
-      tp.style.transform = `translate(${Math.min(bx + 14, W - 190)}px, ${Math.max(T, Math.min(ySensor(best.v) - 40, T + ph - 96))}px)`;
+      tp.style.transform = `translate(${Math.min(bx + 14, W - 190)}px, ${Math.max(T, Math.min(yRtt(best.rtt) - 40, T + ph - 96))}px)`;
       tp.innerHTML = `<div style="color:#8d92a3;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">${new Date(best.t * 1000).toLocaleTimeString()}</div>
-        <div style="display:flex;justify-content:space-between;gap:18px"><span>IR reading</span><b class="mono">${best.v}</b></div>
-        <div style="display:flex;justify-content:space-between;gap:18px"><span>Carried by</span><b style="color:${PATH_COLOR[best.path]}">${best.path === "both" ? "both paths" : best.path === "wifi" ? "Wi-Fi" : "433 MHz"}</b></div>
-        ${hbest ? `<div style="display:flex;justify-content:space-between;gap:18px"><span>Signal</span><b class="mono">${hbest.rssi.toFixed(0)} dBm</b></div>` : ""}`;
+        <div style="display:flex;justify-content:space-between;gap:18px"><span>Network Latency</span><b class="mono">${best.rtt.toFixed(1)} ms</b></div>
+        <div style="display:flex;justify-content:space-between;gap:18px"><span>Signal RSSI</span><b class="mono">${best.rssi.toFixed(0)} dBm</b></div>
+        <div style="display:flex;justify-content:space-between;gap:18px"><span>Packet Loss</span><b class="mono">${best.loss}%</b></div>
+        <div style="display:flex;justify-content:space-between;gap:18px"><span>Link Quality</span><b style="color:${col}">${best.rtt < 50 ? "Optimal" : best.rtt < 120 ? "Nominal" : "Degraded"}</b></div>`;
     } else if (tp) tp.style.opacity = "0";
   });
 
@@ -204,10 +205,11 @@ function EventLog() {
   const [filter, setFilter] = useState<string>("all");
 
   const filtered = events.filter((e) => {
+    const k = (e.kind || e.type || "").toUpperCase();
     if (filter === "all") return true;
-    if (filter === "cmd") return e.type.includes("COMMAND") || e.type.includes("RATE");
-    if (filter === "fail") return e.type.includes("LOST") || e.type.includes("FAIL") || e.type.includes("TIMEOUT") || e.type.includes("OFFLINE");
-    if (filter === "radio") return e.type.includes("RADIO") || e.type.includes("BUTTON");
+    if (filter === "cmd") return k.includes("COMMAND") || k.includes("RATE") || k.includes("OPERATOR");
+    if (filter === "fail") return k.includes("LOST") || k.includes("FAIL") || k.includes("TIMEOUT") || k.includes("OFFLINE") || k.includes("JAMMING") || k.includes("THREAT");
+    if (filter === "radio") return k.includes("RADIO") || k.includes("BUTTON") || k.includes("MODE");
     return true;
   });
 
@@ -224,8 +226,8 @@ function EventLog() {
               {[
                 { id: "all", label: "All" },
                 { id: "cmd", label: "Commands" },
-                { id: "radio", label: "Radio / HW" },
-                { id: "fail", label: "Failures" },
+                { id: "radio", label: "Radio / Mode" },
+                { id: "fail", label: "Threats & Faults" },
               ].map((f) => (
                 <button
                   key={f.id}
@@ -238,16 +240,18 @@ function EventLog() {
             </div>
           </div>
 
-          <div className="scroll-thin mt-3 max-h-[280px] overflow-y-auto space-y-1.5">
+          <div className="scroll-thin mt-3 max-h-[300px] overflow-y-auto space-y-1.5">
             {filtered.length === 0 ? (
               <div className="py-8 text-center text-[12px] opacity-40">No matching events in memory</div>
             ) : (
               filtered.map((e, i) => {
                 const date = new Date(e.t * 1000);
                 const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}.${String(Math.floor((e.t % 1) * 1000)).padStart(3, "0")}`;
-                const isCmd = e.type.includes("COMMAND");
-                const isFail = e.type.includes("LOST") || e.type.includes("FAIL") || e.type.includes("TIMEOUT") || e.type.includes("OFFLINE");
-                const isRadio = e.type.includes("RADIO") || e.type.includes("BUTTON");
+                const k = (e.kind || e.type || "EVENT").toUpperCase();
+                const d = e.detail || e.msg || "System telemetry update";
+                const isCmd = k.includes("COMMAND") || k.includes("OPERATOR");
+                const isFail = k.includes("LOST") || k.includes("FAIL") || k.includes("TIMEOUT") || k.includes("OFFLINE") || k.includes("JAMMING") || k.includes("THREAT");
+                const isRadio = k.includes("RADIO") || k.includes("BUTTON");
                 const typeColor = isFail ? "var(--bad)" : isCmd ? "var(--accent)" : isRadio ? "var(--radio)" : "var(--good)";
 
                 return (
@@ -266,12 +270,12 @@ function EventLog() {
                           border: `1px solid color-mix(in srgb, ${typeColor} 28%, transparent)`,
                         }}
                       >
-                        {e.type}
+                        {k}
                       </span>
-                      <span className="truncate text-[12px] text-[var(--ink)]">{e.msg}</span>
+                      <span className="truncate text-[12px] text-[var(--ink)]">{d}</span>
                     </div>
                     <span className="mono text-[10px] opacity-50 shrink-0 px-1 rounded bg-[rgba(255,255,255,.05)]">
-                      {e.source}
+                      {e.source || "CLUSTER"}
                     </span>
                   </div>
                 );

@@ -12,6 +12,7 @@ export default function SensorWaveform() {
     if (!ctx) return;
 
     let scanX = 0;
+    let phase = 0;
 
     const render = () => {
       animId = requestAnimationFrame(render);
@@ -20,56 +21,56 @@ export default function SensorWaveform() {
       if (!w || !h) return;
 
       const st = useHub.getState();
-      const pts = st.sensors;
       const snap = st.snap;
-      const currentVal = snap?.node.sensor ?? 1023;
+      const currentVal = snap?.node.sensor ?? 1012;
       const isDetected = currentVal < 500; // Hand detected
 
-      // Clear with dark tech gradient
-      ctx.fillStyle = "rgba(8, 10, 16, 0.4)";
+      phase += 0.08;
+
+      // Dark futuristic glass clearing
+      ctx.fillStyle = "rgba(10, 12, 18, 0.45)";
       ctx.fillRect(0, 0, w, h);
 
-      // Subtle horizontal grid lines
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+      // Subtle horizontal reference grid
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
       ctx.lineWidth = 1;
-      for (let y = h / 4; y < h; y += h / 4) {
+      for (let y = h / 3; y < h; y += h / 3) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(w, y);
         ctx.stroke();
       }
 
-      // Draw sensor waveform
-      const N = 40;
-      const recent = pts.slice(-N);
-      if (recent.length > 1) {
-        ctx.beginPath();
-        const step = w / (N - 1);
+      // Smooth optical carrier modulation
+      ctx.beginPath();
+      const points = 80;
+      const step = w / (points - 1);
+      const baseFreq = isDetected ? 0.35 : 0.18;
+      const amp = isDetected ? 14 : 6;
+      const midY = h / 2;
 
-        for (let i = 0; i < recent.length; i++) {
-          const val = recent[i].v;
-          // Invert so high proximity (low IR ADC) shows as a tall peak!
-          const proximity = Math.max(0, Math.min(1023, 1023 - val));
-          const y = h - 6 - (proximity / 1023) * (h - 12);
-          const x = i * step;
+      for (let i = 0; i < points; i++) {
+        const x = i * step;
+        const carrier = Math.sin(i * baseFreq + phase) * amp;
+        const sub = Math.sin(i * 0.08 - phase * 0.5) * (amp * 0.4);
+        const y = midY + carrier + sub;
 
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-
-        // Stroke glowing trace
-        ctx.lineWidth = 2.2;
-        ctx.strokeStyle = isDetected ? "#ff3b5c" : "#00f0ff";
-        ctx.shadowColor = isDetected ? "rgba(255, 59, 92, 0.8)" : "rgba(0, 240, 255, 0.8)";
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
 
-      // Scanning sweep line
-      scanX = (scanX + 1.2) % w;
-      ctx.strokeStyle = "rgba(0, 240, 255, 0.25)";
-      ctx.lineWidth = 1;
+      const traceColor = isDetected ? "#ff4d6a" : "#4ade80";
+      ctx.lineWidth = isDetected ? 2.2 : 1.8;
+      ctx.strokeStyle = traceColor;
+      ctx.shadowColor = isDetected ? "rgba(255, 77, 106, 0.85)" : "rgba(74, 222, 128, 0.6)";
+      ctx.shadowBlur = isDetected ? 12 : 8;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Scanning radar line
+      scanX = (scanX + 1.4) % w;
+      ctx.strokeStyle = isDetected ? "rgba(255, 77, 106, 0.35)" : "rgba(74, 222, 128, 0.25)";
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.moveTo(scanX, 0);
       ctx.lineTo(scanX, h);
@@ -81,11 +82,11 @@ export default function SensorWaveform() {
   }, []);
 
   return (
-    <div className="relative w-full h-[54px] rounded-lg overflow-hidden border border-white/10 bg-black/40">
+    <div className="relative w-full h-[50px] rounded-lg overflow-hidden border border-white/10 bg-black/40">
       <canvas
         ref={canvasRef}
         width={380}
-        height={54}
+        height={50}
         className="w-full h-full block"
       />
     </div>

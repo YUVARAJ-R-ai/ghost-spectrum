@@ -37,7 +37,7 @@ wheels/
 .DS_Store
 
 # Incident test output (keep structure, ignore huge dynamic logs if needed)
-# server/incidents/*.json
+server/incidents/*.json
 
 # Hotspot credentials
 firmware/*/include/secrets.h

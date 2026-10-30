@@ -13,3 +13,12 @@ Project reframed from "RF intrusion / air-gap relay" to a self-diagnosing IoT li
 - Node B: Ported to ESP8266 development board (`firmware/gateway_node_esp8266`). XY-MK-5V receiver DATA on D5 (GPIO 14) powered at 3V3 for safe logic levels. SSD1306 I2C OLED on D2 (GPIO 4 SDA) and D1 (GPIO 5 SCL). RadioHead dummy pins on D6 (GPIO 12) & D7 (GPIO 13). Critical bug fixed: validates length == 16 before accessing frame bytes. Validates magic (0xA5), version (0x02), type (0x0A), and CRC16-CCITT. Tracks duplicates with 32-entry circular buffer. Connects to Wi-Fi and forwards validated telemetry over UDP (port 4210) and USB Serial. Non-blocking OLED status display and periodic gateway heartbeat ({"hb":1}).
 - Shared Protocol: Defined in `firmware/common/radio_protocol.h` and verified via host C++ and Python unit tests.
 
+## [2026-10-30] Phase 2: Autonomous Tri-Node Wi-Fi Cluster, Tactical Sentinel & Voice HUD
+- Node 1 (ESP8266): Optical Proximity & Adaptive Sensing. Features 3-stage dynamic LED bargraph (D7, D6, D5), ambient optical baseline auto-calibration (`recalibrate_baseline()`), and UDP remote command processor (`{"cmd":"zero"}`).
+- Node 2 (ESP8266): Telemetry Supervisor & Active Audio Alert. Drives SSD1306 OLED (D1=SCL, D2=SDA), multi-tone PWM buzzer (D6) for alarm warbles and test chimes, and tactile ACK button (D5).
+- Node 3 (ESP32): Cyber Sentinel & Spectrum Guard. Operates in 3 tactical modes: `MODE_SPECTRUM_SWEEPER` (channels 1-13 hop), `MODE_TRAFFIC_MONITOR` (beacon density/rogue check), and `MODE_SYNTHETIC_JAMMER`. Short button click toggles modes; long press (>1.2s) fires 5-second synthetic deauth/jamming burst. Dual-LED visual signaling (GPIO 2 & GPIO 4).
+- Edge Hub (`server/app.py` & `server/agent_orchestrator.py`): Bidirectional UDP 4210 message router and command dispatcher (`POST /api/chat/command`), serving FastAPI WebSocket and HTTP endpoints on port 8500. Dual AI engine:
+  - AWS Bedrock: Cloud reasoning powered by Amazon Nova Lite (`apac.amazon.nova-lite-v1:0` in `ap-south-1`) with native tool-calling (`trigger_buzzer`, `simulate_threat`, `rearm_cluster`, `zero_optical_sensor`, `set_telemetry_rate`).
+  - Local JEV: Joint Edge Validator executing on-device sub-millisecond (< 0.1ms) deterministic tool-calls and link decisions.
+- 3D Mission Control (`frontend/`): Multi-node animated particle links (Cyan Node 1, Emerald Node 2, Crimson Node 3), 60 FPS carrier spectrum analyzer (`SensorWaveform.tsx`), decoupled network RTT timeline (`Timeline.tsx`), and dual-engine Voice & Chat drawer (`VoiceChatConsole.tsx`).
+

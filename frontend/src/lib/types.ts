@@ -43,9 +43,12 @@ export interface CmdState {
 }
 
 export interface HubEvent {
+  id?: string;
   t: number;
-  type: string;
-  msg: string;
+  type?: string;
+  kind?: string;
+  msg?: string;
+  detail?: string;
   source: string;
 }
 

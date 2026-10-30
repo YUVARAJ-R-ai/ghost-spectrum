@@ -10,3 +10,9 @@ ESP32 flash communication errors (invalid header: 0xffffffff / Manufacturer ff) 
 - NixOS firewall blocks Node A's UDP 4210 by default: `sudo iptables -I nixos-fw 1 -p udp --dport 4210 -j nixos-fw-accept`.
 - A metal tin around Node A blocks 433 MHz too; for the "fading" demo put the phone hotspot in the tin instead.
 - Hard Wi-Fi loss takes the ESP32 seconds to notice; readings sent meanwhile vanish unless unacked readings are resent over radio (store-and-forward, now in Node A).
+- Dual-key event logging (`kind`/`type`, `detail`/`msg`) between Python FastAPI and TypeScript UI prevents silent rendering drops in real-time event tables.
+- Decoupling network latency (RTT ms) from raw analog sensor voltage prevents misleading timeline spikes; optical proximity belongs in a dedicated high-refresh carrier spectrum analyzer.
+- Native browser Web Speech API (STT & TTS) enables fully offline cyber voice control without third-party API dependencies or keys.
+- In a decentralized wireless sensor cluster, sending commands to `255.255.255.255` is not always sufficient on modern Linux/NixOS Wi-Fi stacks without specific routing. Dual broadcasting to global `255.255.255.255`, subnet directed broadcast (`10.99.2.255`), and unicast addresses guarantees delivery.
+- For peer-to-peer autonomic self-healing without a central hub, nodes must ingest each other's datagrams directly (e.g. Node 2 and Node 1 listening for Node 3 packets `n == "3"`). This enables zero-latency physical alerts (buzzer sirens and LED strobes) even if the central hub is offline.
+

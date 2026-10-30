@@ -75,7 +75,9 @@ class Hub:
             "id": f"ev-{len(self.events) + 1}",
             "t": round(time.time(), 3),
             "kind": kind,
+            "type": kind,
             "detail": detail,
+            "msg": detail,
             "source": source
         }
         self.events.appendleft(event)
@@ -229,6 +231,32 @@ class Hub:
         if "ip" in d:
             self.gateway["ip"] = d["ip"]
 
+    def broadcast_cluster_command(self, cmd_dict: Dict[str, Any]):
+        """Broadcasts a JSON command to all nodes across subnet, global broadcast, and known unicast IPs."""
+        msg = json.dumps(cmd_dict).encode()
+        targets = [
+            ("255.255.255.255", 4210),
+            ("10.99.2.255", 4210),
+            ("10.99.2.169", 4210),
+            ("10.99.2.107", 4210),
+            ("10.99.2.54", 4210)
+        ]
+        if self.node_addr:
+            targets.append(self.node_addr)
+        if hasattr(self, "node_ip") and self.node_ip:
+            targets.append((self.node_ip, 4210))
+        if self.gateway.get("ip"):
+            targets.append((self.gateway["ip"], 4210))
+        if self.sentinel.get("ip"):
+            targets.append((self.sentinel["ip"], 4210))
+        
+        if self.transport:
+            for t in set(targets):
+                try:
+                    self.transport.sendto(msg, t)
+                except Exception:
+                    pass
+
     def on_sentinel_udp(self, d: Dict[str, Any]):
         now = time.time()
         self.sentinel["last"] = now
@@ -243,12 +271,21 @@ class Hub:
             self.sentinel["ip"] = d["ip"]
         self.air["ch"] = d.get("ch", self.air.get("ch", 6))
         if fault == 1:
-            self.air["deauth_per_s"] = 125.0
-            self.air["frames_per_s"] = 450.0
+            self.agent.alert = "deauth"
+            self.air["deauth_per_s"] = 145.0
+            self.air["frames_per_s"] = 480.0
+            self.gateway["alert"] = "PREDICTIVE_FAILOVER"
             self.log_event("SENTINEL_FAULT_INJECTED", f"Node 3 Sentinel injected {d.get('anomaly', 'ANOMALY')}", "NODE_3_SENTINEL")
+            # Immediately broadcast alarm to physical Node 2 buzzer and Node 1 LEDs!
+            self.broadcast_cluster_command({"cmd": "buzzer", "val": 1, "alert": "threat"})
         else:
             self.air["deauth_per_s"] = 0.0
             self.air["frames_per_s"] = 40.0
+            if self.agent.alert == "deauth":
+                self.agent.alert = None
+                self.gateway["alert"] = "NOMINAL"
+                self.broadcast_cluster_command({"cmd": "clear"})
+                self.log_event("SENTINEL_FAULT_CLEARED", "Node 3 Sentinel anomaly resolved, link restored", "NODE_3_SENTINEL")
 
     def on_gateway_line(self, d: Dict[str, Any]):
         now = time.time()
@@ -375,6 +412,10 @@ class Hub:
 
 hub = Hub()
 
+from agent_orchestrator import BedrockAgent, JevLocalAgent
+jev_agent = JevLocalAgent(hub)
+bedrock_agent = BedrockAgent(hub)
+
 
 class NodeUDP(asyncio.DatagramProtocol):
     def connection_made(self, transport):
@@ -402,6 +443,8 @@ class NodeUDP(asyncio.DatagramProtocol):
                 except Exception:
                     pass
                 hub.node_addr = addr
+                if "ip" in pkt:
+                    hub.node_ip = pkt["ip"]
                 hub.ingest(pkt, "wifi")
 
         # 2. Node 2 / Node B Gateway Forwarded Telemetry & Heartbeats
@@ -603,24 +646,51 @@ async def test_supervisor_buzzer():
     hub.gateway["alert"] = "PREDICTIVE_FAILOVER"
     hub.gateway["last"] = time.time()
     hub.gateway["online"] = True
-    if hub.transport:
-        try:
-            hub.transport.sendto(json.dumps({"cmd": "buzzer", "val": 1}).encode(), ("255.255.255.255", 4210))
-        except Exception:
-            pass
+    hub.broadcast_cluster_command({"cmd": "buzzer", "val": 1})
     hub.log_event("SUPERVISOR_BUZZER_TEST", "Test buzzer pulse dispatched to Node 2 Supervisor", "DASHBOARD")
     return {"status": "ok"}
 
 
 @app.post("/api/cmd/zero_sensor")
 async def zero_sensor():
-    if hub.transport and hub.node_addr:
-        try:
-            hub.transport.sendto(json.dumps({"cmd": "zero"}).encode(), hub.node_addr)
-        except Exception:
-            pass
+    hub.broadcast_cluster_command({"cmd": "zero"})
     hub.log_event("OPTICAL_BASELINE_REZERO", "Baseline optical sensor calibration synchronized", "DASHBOARD")
     return {"status": "ok"}
+
+
+@app.post("/api/chat/command")
+async def chat_command(body: Dict[str, Any]):
+    raw = str(body.get("text", "")).strip()
+    engine = str(body.get("engine", "auto")).strip().lower()
+    if not raw:
+        return {"reply": "Command empty", "status": "err"}
+    
+    hub.log_event("OPERATOR_COMMAND", f"[{engine.upper()}] '{raw}'", "OPERATOR")
+    
+    # 1. Explicit Local JEV Engine
+    if engine == "jev":
+        return jev_agent.process(raw)
+    
+    # 2. Explicit AWS Bedrock Engine
+    if engine == "bedrock":
+        res = bedrock_agent.process(raw)
+        if res.get("status") == "ok":
+            return res
+        # Fallback to JEV if Bedrock unavailable or failed
+        fallback_res = jev_agent.process(raw)
+        fallback_res["fallback_from"] = "bedrock"
+        return fallback_res
+    
+    # 3. Auto Engine: Fast tool calls route immediately to JEV (<2ms); tactical conversations to Bedrock
+    fast_tool_tokens = ("jam", "deauth", "attack", "clear", "reset", "rearm", "alarm", "buzzer", "beep", "chirp", "zero", "calibrate", "tare", "rate", "radio", "wifi", "led", "light", "lights", "lamp")
+    if any(k in raw.lower() for k in fast_tool_tokens):
+        return jev_agent.process(raw)
+    
+    # Attempt Bedrock, fallback to local JEV
+    res = bedrock_agent.process(raw)
+    if res.get("status") == "ok":
+        return res
+    return jev_agent.process(raw)
 
 
 @app.post("/api/cmd/{name}")
