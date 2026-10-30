@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { COLOR } from "../lib/format";
-import { RADIO_SPLIT, S, radioCurve, wifiCurve, introAt } from "./world";
+import { RADIO_SPLIT, S, radioCurve, wifiCurve, node2Curve, node3Curve, introAt } from "./world";
 
 const VERT = `varying float vU; void main(){ vU = uv.x; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 
@@ -52,18 +52,35 @@ function Wire({ curve, color, solid, tick }: { curve: THREE.Curve<THREE.Vector3>
 export default function Links() {
   return (
     <>
+      {/* Node 1: Sensor -> Hotspot -> Laptop (Cyan) */}
       <Wire curve={wifiCurve} color={COLOR.wifi} tick={(u) => {
-        // bright while Wi-Fi carries the data, dim during a handover, red-broken when the router is gone or rejecting us
         u.uActive.value = S.online * S.wifiUp * (1 - S.radio * 0.6);
         const dead = S.online * (1 - S.wifiUp);
         u.uBreak.value = Math.max(dead, S.auth);
         u.uBreakAt.value = S.auth > 0.5 ? 0.3 : 0.5;
         u.uFlicker.value = S.wifiUp * (1 - S.strength) * 0.9 + S.congest * 0.5;
       }} />
+
+      {/* Node 2: Supervisor -> Hotspot -> Laptop (Emerald / Green) */}
+      <Wire curve={node2Curve} color={COLOR.good} tick={(u) => {
+        u.uActive.value = S.gw * 0.9;
+        u.uBreak.value = 0;
+        u.uFlicker.value = 0;
+      }} />
+
+      {/* Node 3: Sentinel -> Hotspot -> Laptop (Violet / Red on attack) */}
+      <Wire curve={node3Curve} color={COLOR.violet} tick={(u) => {
+        u.uActive.value = S.airOn * (1 + S.deauth * 1.5);
+        u.uBreak.value = S.deauth > 0.3 ? 0.7 : 0;
+        u.uBreakAt.value = 0.45;
+        u.uFlicker.value = S.deauth * 0.8;
+      }} />
+
+      {/* Legacy Radio Route (Amber) */}
       <Wire curve={radioCurve} color={COLOR.radio} solid={RADIO_SPLIT} tick={(u) => {
-        // a faint dotted standby beacon until the node actually switches to radio
         u.uActive.value = S.radio;
-        u.uBreak.value = 0; u.uFlicker.value = 0;
+        u.uBreak.value = 0;
+        u.uFlicker.value = 0;
       }} />
     </>
   );

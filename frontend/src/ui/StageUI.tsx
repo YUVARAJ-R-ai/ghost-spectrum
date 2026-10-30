@@ -3,6 +3,7 @@ import ControlPanel from "./ControlPanel";
 import DiagCard from "./DiagCard";
 import AgentFeed from "./AgentFeed";
 import DemoDock from "./DemoDock";
+import VoiceChatConsole from "./VoiceChatConsole";
 import { motion } from "framer-motion";
 import { useUi } from "../lib/store";
 
@@ -16,16 +17,17 @@ export default function StageUI() {
   return (
     <div className="stage-ui fixed inset-0 z-10 overflow-y-auto overscroll-contain md:overflow-hidden" style={{ pointerEvents: "none" }}>
       <div className="h-[52dvh] md:hidden" />
-      <div className="flex flex-col gap-3 px-4 pb-32 md:contents">
+      <div className="flex flex-col gap-3 px-4 pb-32 md:contents pointer-events-auto">
         <Hero />
         {!zen && <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, delay: 0.4, ease: [0.32, 0.72, 0, 1] }}
-          className="flex min-h-0 flex-col gap-2.5 md:absolute md:bottom-7 md:right-7 md:top-[80px] md:w-[390px] md:overflow-y-auto md:pr-1 scroll-thin [&>*]:shrink-0">
+          className="flex min-h-0 flex-col gap-2.5 md:absolute md:bottom-7 md:right-7 md:top-[80px] md:w-[390px] md:overflow-y-auto md:pr-1 scroll-thin [&>*]:shrink-0 pointer-events-auto">
           <ControlPanel />
           <DiagCard />
           <AgentFeed className="!shrink min-h-[84px] max-h-[160px]" />
           <DemoDock />
         </motion.div>}
+        <VoiceChatConsole />
       </div>
     </div>
   );

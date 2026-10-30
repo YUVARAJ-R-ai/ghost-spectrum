@@ -14,6 +14,8 @@ pkgs.mkShell {
     python3Packages.fastapi
     python3Packages.uvicorn
     python3Packages.websockets
+    python3Packages.boto3
+    python3Packages.requests
   ];
 
   shellHook = ''

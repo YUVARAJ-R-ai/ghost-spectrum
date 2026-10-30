@@ -12,19 +12,32 @@ export const POS = {
   air: v(-3.7, 0, -3.7),
 };
 
-// Route 1: Node A -> the router (phone) -> the laptop, over Wi-Fi
+// Route 1: Node A (Sensor) -> Hotspot -> Laptop
 export const wifiCurve = new THREE.CatmullRomCurve3([
   v(-3.95, 0.9, 0.75), v(-2.4, 2.4, -1.0), v(0, 1.85, -3.05), v(2.4, 2.4, -0.8), v(4.0, 1.3, 0.4),
 ], false, "catmullrom", 0.5);
 
-// Route 2: Node A -> 433 MHz radio -> the gateway (Node B) -> USB -> the laptop
+// Route 2: Node 2 (Supervisor) -> Hotspot -> Laptop
+export const node2Curve = new THREE.CatmullRomCurve3([
+  v(2.35, 0.85, 3.1), v(1.8, 2.2, 0.2), v(0, 1.85, -3.05), v(2.4, 2.4, -0.8), v(4.0, 1.3, 0.4),
+], false, "catmullrom", 0.5);
+
+// Route 3: Node 3 (Sentinel) -> Hotspot -> Laptop
+export const node3Curve = new THREE.CatmullRomCurve3([
+  v(-3.7, 0.85, -3.7), v(-1.8, 2.3, -3.4), v(0, 1.85, -3.05), v(2.4, 2.4, -0.8), v(4.0, 1.3, 0.4),
+], false, "catmullrom", 0.5);
+
+// Route 4: Legacy 433 MHz Radio Backup Path
 export const radioCurve = new THREE.CatmullRomCurve3([
   v(-3.9, 0.55, 1.3), v(-1.5, 1.3, 2.9), v(2.35, 1.0, 2.9), v(3.6, 0.55, 2.0), v(4.0, 0.25, 1.3),
 ], false, "catmullrom", 0.5);
 
 const SAMPLES = 240;
 export const wifiPts = wifiCurve.getSpacedPoints(SAMPLES);
+export const node2Pts = node2Curve.getSpacedPoints(SAMPLES);
+export const node3Pts = node3Curve.getSpacedPoints(SAMPLES);
 export const radioPts = radioCurve.getSpacedPoints(SAMPLES);
+
 
 /** Point at fraction u (0..1) of an evenly spaced sample table: far cheaper than curve.getPointAt per particle. */
 export function pointAt(table: THREE.Vector3[], u: number, out: THREE.Vector3) {
