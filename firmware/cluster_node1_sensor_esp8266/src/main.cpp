@@ -331,6 +331,8 @@ void setup() {
     Serial.println();
     Serial.printf("[Node-1] Connecting to SSID: %s\n", WIFI_SSID);
     WiFi.mode(WIFI_STA);
+    // No Wi-Fi power saving: the boards run on USB, and modem sleep adds 100 to 300 ms to every reply
+    WiFi.setSleepMode(WIFI_NONE_SLEEP);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 
     int timeout = 0;
