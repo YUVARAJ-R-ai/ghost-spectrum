@@ -265,7 +265,12 @@ class Hub:
         self.sentinel["last"] = now
         self.sentinel["online"] = True
         self.sentinel["transport"] = "udp"
+        if "ip" in d:
+            self.sentinel["ip"] = d["ip"]
         fault = d.get("fault", 0)
+        if fault == 0 and now < getattr(self, "sim_hold_until", 0.0):
+            # A simulated attack is still on its way to Node 3; its "all fine" packets would cancel it
+            return
         self.sentinel["fault"] = fault
         self.sentinel["anomaly"] = d.get("anomaly", "NOMINAL")
         self.sentinel["rssi"] = d.get("rssi", -60)
@@ -633,6 +638,7 @@ async def trigger_cluster_alert():
     hub.air["deauth_per_s"] = 142.0
     hub.air["frames_per_s"] = 460.0
     hub.sentinel["fault"] = 1
+    hub.sim_hold_until = time.time() + 6.0
     hub.sentinel["last"] = time.time()
     hub.sentinel["online"] = True
     hub.gateway["alert"] = "PREDICTIVE_FAILOVER"

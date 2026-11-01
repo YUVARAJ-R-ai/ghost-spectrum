@@ -154,6 +154,7 @@ class JevLocalAgent:
             self.hub.air["deauth_per_s"] = 158.0
             self.hub.air["frames_per_s"] = 480.0
             self.hub.sentinel["fault"] = 1
+            self.hub.sim_hold_until = time.time() + 6.0
             self.hub.sentinel["last"] = time.time()
             self.hub.sentinel["online"] = True
             self.hub.gateway["alert"] = "PREDICTIVE_FAILOVER"
@@ -334,6 +335,7 @@ class BedrockAgent:
             self.hub.air["deauth_per_s"] = 145.0
             self.hub.air["frames_per_s"] = 460.0
             self.hub.sentinel["fault"] = 1
+            self.hub.sim_hold_until = time.time() + 6.0
             self.hub.sentinel["ch"] = ch
             self.hub.sentinel["last"] = time.time()
             self.hub.sentinel["online"] = True

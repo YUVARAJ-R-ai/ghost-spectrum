@@ -180,6 +180,15 @@ void update_oled() {
 void loop() {
     unsigned long now = millis();
 
+    // Wi-Fi watchdog: setup() gives up after a few seconds, so keep retrying while the link is down
+    static unsigned long last_wifi_retry = 0;
+    if (WiFi.status() != WL_CONNECTED && now - last_wifi_retry > 15000) {
+        last_wifi_retry = now;
+        Serial.printf("[Node-2] Wi-Fi down (status %d), retrying\n", WiFi.status());
+        WiFi.disconnect();
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+    }
+
     // Check manual fault/alert injection button on D5
     if (digitalRead(BUTTON_PIN) == LOW) {
         if (!alert_active) {

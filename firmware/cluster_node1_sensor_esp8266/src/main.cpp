@@ -359,6 +359,15 @@ void setup() {
 void loop() {
     unsigned long now = millis();
 
+    // Wi-Fi watchdog: setup() gives up after a few seconds, so keep retrying while the link is down
+    static unsigned long last_wifi_retry = 0;
+    if (WiFi.status() != WL_CONNECTED && now - last_wifi_retry > 15000) {
+        last_wifi_retry = now;
+        Serial.printf("[Node-1] Wi-Fi down (status %d), retrying\n", WiFi.status());
+        WiFi.disconnect();
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+    }
+
     // Check hardware pushbutton on D3 (GPIO 0)
     if (digitalRead(BUTTON_PIN) == LOW) {
         if (now - last_btn_press > 500) {
@@ -379,9 +388,14 @@ void loop() {
     // 1. Check for incoming direct UDP commands on 4210
     handle_incoming_udp();
 
-    // 2. Read analog optical sensor (0 to 1023) with smoothing
-    int raw = analogRead(SENSOR_PIN);
-    last_sensor = (last_sensor * 3 + raw) / 4;
+    // 2. Read analog optical sensor (0 to 1023) with smoothing.
+    // At most every 5 ms: reading A0 on every loop pass starves the ESP8266 Wi-Fi radio and it never joins.
+    static unsigned long last_adc = 0;
+    if (now - last_adc >= 5) {
+        last_adc = now;
+        int raw = analogRead(SENSOR_PIN);
+        last_sensor = (last_sensor * 3 + raw) / 4;
+    }
 
     // 3. Edge anomaly / proximity inference
     int delta = abs(last_sensor - sensor_baseline);

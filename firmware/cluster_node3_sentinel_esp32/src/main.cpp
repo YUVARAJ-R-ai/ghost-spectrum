@@ -91,11 +91,22 @@ void transmit_packet(bool is_fault) {
 void loop() {
     unsigned long now = millis();
 
+    // Wi-Fi watchdog: setup() gives up after a few seconds, so keep retrying while the link is down
+    static unsigned long last_wifi_retry = 0;
+    if (WiFi.status() != WL_CONNECTED && now - last_wifi_retry > 15000) {
+        last_wifi_retry = now;
+        Serial.printf("[Node-3 Sentinel] Wi-Fi down (status %d), retrying\n", WiFi.status());
+        WiFi.disconnect();
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+    }
+
     // Ingest incoming commands (e.g. from chat console or hub)
     int packetSize = udp.parsePacket();
     if (packetSize > 0) {
         char packetBuffer[128];
         int len = udp.read(packetBuffer, sizeof(packetBuffer) - 1);
+        // Drop the rest of a long packet (Node 1 telemetry); on ESP32, parsePacket() returns 0 until it is gone
+        udp.flush();
         if (len > 0) {
             packetBuffer[len] = '\0';
             StaticJsonDocument<128> doc;
