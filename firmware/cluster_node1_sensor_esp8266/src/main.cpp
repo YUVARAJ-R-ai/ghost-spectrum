@@ -365,7 +365,14 @@ void loop() {
         last_wifi_retry = now;
         Serial.printf("[Node-1] Wi-Fi down (status %d), retrying\n", WiFi.status());
         WiFi.disconnect();
+#ifdef WIFI_SSID_2
+        // Two networks in secrets.h (e.g. phone hotspot and home Wi-Fi): alternate between them
+        static bool try_second = false;
+        try_second = !try_second;
+        WiFi.begin(try_second ? WIFI_SSID_2 : WIFI_SSID, try_second ? WIFI_PASS_2 : WIFI_PASS);
+#else
         WiFi.begin(WIFI_SSID, WIFI_PASS);
+#endif
     }
 
     // Check hardware pushbutton on D3 (GPIO 0)

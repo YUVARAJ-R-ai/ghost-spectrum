@@ -97,7 +97,14 @@ void loop() {
         last_wifi_retry = now;
         Serial.printf("[Node-3 Sentinel] Wi-Fi down (status %d), retrying\n", WiFi.status());
         WiFi.disconnect();
+#ifdef WIFI_SSID_2
+        // Two networks in secrets.h (e.g. phone hotspot and home Wi-Fi): alternate between them
+        static bool try_second = false;
+        try_second = !try_second;
+        WiFi.begin(try_second ? WIFI_SSID_2 : WIFI_SSID, try_second ? WIFI_PASS_2 : WIFI_PASS);
+#else
         WiFi.begin(WIFI_SSID, WIFI_PASS);
+#endif
     }
 
     // Ingest incoming commands (e.g. from chat console or hub)
