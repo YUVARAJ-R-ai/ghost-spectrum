@@ -158,7 +158,7 @@ class JevLocalAgent:
             self.hub.sentinel["online"] = True
             self.hub.gateway["alert"] = "PREDICTIVE_FAILOVER"
             self.hub.log_event("THREAT_ALERT", "Synthetic jamming anomaly triggered on channel 11", "JEV_LOCAL")
-            self.hub.broadcast_cluster_command({"cmd": "buzzer", "val": 1, "alert": "threat"})
+            self.hub.broadcast_cluster_command({"cmd": "threat", "val": 1, "alert": "threat"})
             elapsed = round((time.perf_counter() - t0) * 1000, 2)
             return {
                 "reply": f"⚡ [JEV Local] Autonomic Threat Engaged: Synthetic deauth attack triggered on channel 11. Gateway alert active. ({elapsed}ms)",
@@ -339,7 +339,7 @@ class BedrockAgent:
             self.hub.sentinel["online"] = True
             self.hub.gateway["alert"] = "PREDICTIVE_FAILOVER"
             self.hub.log_event("THREAT_ALERT", f"Bedrock simulated cyber attack on channel {ch}", "BEDROCK_AGENT")
-            self.hub.broadcast_cluster_command({"cmd": "buzzer", "val": 1, "alert": "threat"})
+            self.hub.broadcast_cluster_command({"cmd": "threat", "val": 1, "alert": "threat"})
             return f"Synthetic cyber attack simulation active on channel {ch}. Node 3 and Node 2 alerted."
 
         elif tool_name == "rearm_cluster":

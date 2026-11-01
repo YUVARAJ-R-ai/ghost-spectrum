@@ -637,6 +637,8 @@ async def trigger_cluster_alert():
     hub.sentinel["online"] = True
     hub.gateway["alert"] = "PREDICTIVE_FAILOVER"
     hub.log_event("CLUSTER_THREAT_SIMULATION", "Channel anomaly & deauth attack triggered via dashboard", "DASHBOARD")
+    # Tell the boards too: Node 3 latches a 4 s jamming fault, Node 2 beeps, Node 1 shows ALERT
+    hub.broadcast_cluster_command({"cmd": "threat", "val": 1, "alert": "threat"})
     return {"status": "ok", "alert": "deauth"}
 
 
@@ -648,6 +650,7 @@ async def clear_cluster_alert():
     hub.sentinel["fault"] = 0
     hub.gateway["alert"] = "NOMINAL"
     hub.log_event("CLUSTER_ALERTS_CLEARED", "All cluster alerts and threat simulations reset to nominal", "DASHBOARD")
+    hub.broadcast_cluster_command({"cmd": "clear"})
     return {"status": "ok", "alert": None}
 
 
