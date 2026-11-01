@@ -228,6 +228,9 @@ class Hub:
             self.gateway["health"] = d["health"]
         if "alert" in d:
             self.gateway["alert"] = d["alert"]
+            # Node 2 back to NOMINAL ends a button incident, unless Node 3 or the dashboard still holds a fault
+            if d["alert"] == "NOMINAL" and self.agent.alert == "deauth" and not self.sentinel.get("fault"):
+                self.agent.alert = None
         if "ip" in d:
             self.gateway["ip"] = d["ip"]
 
@@ -449,7 +452,14 @@ class NodeUDP(asyncio.DatagramProtocol):
 
         # 2. Node 2 / Node B Gateway Forwarded Telemetry & Heartbeats
         elif n in ("B", "2"):
-            if "hb" in pkt:
+            if pkt.get("cmd") == "threat":
+                # Node 2's D5 button broadcasts this; show it on the dashboard even when Node 3 is off
+                hub.agent.alert = "deauth"
+                hub.gateway["alert"] = "PREDICTIVE_FAILOVER"
+                hub.gateway["last"] = time.time()
+                hub.gateway["online"] = True
+                hub.log_event("SUPERVISOR_MANUAL_TRIGGER", "Incident button pressed on Node 2 Supervisor", "NODE_2_SUPERVISOR")
+            elif "hb" in pkt:
                 hub.on_gateway_heartbeat(pkt, source="udp")
             elif "seq" in pkt:
                 hub.ingest(pkt, "radio")

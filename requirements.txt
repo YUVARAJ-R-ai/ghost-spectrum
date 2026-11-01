@@ -1,0 +1,8 @@
+# Python packages for the hub (server/), the tools and the tests. Same set as shell.nix.
+fastapi
+uvicorn[standard]
+websockets
+pyserial
+numpy
+scikit-learn
+joblib
