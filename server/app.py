@@ -700,12 +700,8 @@ async def chat_command(body: Dict[str, Any]):
         fallback_res["fallback_from"] = "bedrock"
         return fallback_res
     
-    # 3. Auto Engine: Fast tool calls route immediately to JEV (<2ms); tactical conversations to Bedrock
-    fast_tool_tokens = ("jam", "deauth", "attack", "clear", "reset", "rearm", "alarm", "buzzer", "beep", "chirp", "zero", "calibrate", "tare", "rate", "radio", "wifi", "led", "light", "lights", "lamp")
-    if any(k in raw.lower() for k in fast_tool_tokens):
-        return jev_agent.process(raw)
-    
-    # Attempt Bedrock, fallback to local JEV
+    # 3. Auto: Bedrock answers everything when AWS keys are set up; the local engine covers
+    # for it when there are no keys or no internet
     res = bedrock_agent.process(raw)
     if res.get("status") == "ok":
         return res
