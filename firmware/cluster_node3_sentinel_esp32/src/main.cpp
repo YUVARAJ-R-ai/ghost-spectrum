@@ -8,6 +8,8 @@
 #define STATUS_LED 2      // Onboard Blue LED on most ESP32 DevKits
 #define BUTTON_PIN 27     // Pushbutton for Fault / Anomaly Injection
 #define SENSOR_PIN 34     // Optional Secondary Analog Sensor
+#define ALERT_LED 4       // External alert LED (anode via 220 ohm to GPIO 4, cathode to GND)
+#define BUZZER_PIN 25     // Active buzzer I/O (or +) to GPIO 25, GND to GND
 
 WiFiUDP udp;
 static unsigned long last_send = 0;
@@ -21,6 +23,10 @@ void setup() {
     digitalWrite(STATUS_LED, LOW);
 
     pinMode(BUTTON_PIN, INPUT_PULLUP);
+    pinMode(ALERT_LED, OUTPUT);
+    pinMode(BUZZER_PIN, OUTPUT);
+    digitalWrite(ALERT_LED, LOW);
+    digitalWrite(BUZZER_PIN, LOW);
 
     Serial.println();
     Serial.printf("[Node-3 Sentinel] Connecting to SSID: %s\n", WIFI_SSID);
@@ -131,6 +137,11 @@ void loop() {
         // Immediate broadcast that threat is resolved
         transmit_packet(false);
     }
+
+    // Local alarm while a threat is active: LED and buzzer pulse together, 150 ms on / 150 ms off
+    bool pulse = fault_latched && ((now / 150) % 2 == 0);
+    digitalWrite(ALERT_LED, pulse ? HIGH : LOW);
+    digitalWrite(BUZZER_PIN, pulse ? HIGH : LOW);
 
     // Telemetry send interval (500ms)
     if (now - last_send >= 500) {
