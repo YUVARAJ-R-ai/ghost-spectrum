@@ -126,41 +126,39 @@ function Chart({ range }: { range: number }) {
   );
 }
 
-function Spark({ data, color, min, max }: { data: number[]; color: string; min: number; max: number }) {
-  if (data.length < 2) return <div className="h-10" />;
-  const pts = data.map((v, i) => `${((i / (data.length - 1)) * 100).toFixed(2)},${(36 - ((Math.min(max, Math.max(min, v)) - min) / (max - min)) * 34).toFixed(2)}`);
-  return (
-    <svg viewBox="0 0 100 38" preserveAspectRatio="none" className="h-10 w-full overflow-visible">
-      <defs><linearGradient id={`sg${color.slice(1)}`} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={color} stopOpacity=".3" /><stop offset="1" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-      <polygon points={`0,38 ${pts.join(" ")} 100,38`} fill={`url(#sg${color.slice(1)})`} />
-      <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
-    </svg>
-  );
-}
-
-function Tile({ label, value, unit, data, color, min, max }: { label: string; value: string; unit: string; data: number[]; color: string; min: number; max: number }) {
-  return (
-    <Bezel tight lit={false}>
-      <div className="p-4">
-        <div className="label">{label}</div>
-        <div className="mt-1.5 flex items-baseline gap-1.5"><span className="mono text-[26px] font-medium tracking-tight">{value}</span><span className="text-[12px]" style={{ color: "var(--muted)" }}>{unit}</span></div>
-        <div className="mt-3"><Spark data={data} color={color} min={min} max={max} /></div>
-      </div>
-    </Bezel>
-  );
-}
+// Events worth showing to an audience, in plain words. Anything not listed (command bookkeeping,
+// config changes) stays out of the list; ?dev shows everything.
+const EVENT_TEXT: Record<string, (detail: string) => string> = {
+  SENTINEL_FAULT_INJECTED: () => "Board 3 detected a jamming attack",
+  SENTINEL_FAULT_CLEARED: () => "Attack over, back to normal",
+  SUPERVISOR_MANUAL_TRIGGER: () => "Incident reported with board 2's button",
+  CLUSTER_THREAT_SIMULATION: () => "Attack simulated from the dashboard",
+  THREAT_ALERT: () => "Attack simulated by the assistant",
+  CLUSTER_ALERTS_CLEARED: () => "Everything reset",
+  ALERT_CLEARED: () => "Everything reset",
+  SUPERVISOR_BUZZER_TEST: () => "Alarm test",
+  BUZZER_TEST: () => "Alarm test",
+  OPTICAL_BASELINE_REZERO: () => "Sensor calibrated",
+  CALIBRATE_SENSOR: () => "Sensor calibrated",
+  LED_CONTROL: () => "Lights switched",
+  OPERATOR_COMMAND: (d) => `Asked the assistant: ${d.replace(/^\[[A-Z]+\]\s*/, "").replace(/^'|'$/g, "")}`,
+  WIFI_RECOVERY_CONFIRMED: () => "Wi-Fi recovered",
+  BOOT: () => "Dashboard started",
+};
+const EVENT_TONE: Record<string, string> = {
+  SENTINEL_FAULT_INJECTED: "var(--bad)", SUPERVISOR_MANUAL_TRIGGER: "var(--bad)", CLUSTER_THREAT_SIMULATION: "var(--bad)", THREAT_ALERT: "var(--bad)",
+  SENTINEL_FAULT_CLEARED: "var(--good)", CLUSTER_ALERTS_CLEARED: "var(--good)", ALERT_CLEARED: "var(--good)", WIFI_RECOVERY_CONFIRMED: "var(--good)",
+  SUPERVISOR_BUZZER_TEST: "var(--warn)", BUZZER_TEST: "var(--warn)", OPERATOR_COMMAND: "var(--accent)",
+};
+const DEV = new URLSearchParams(location.search).has("dev");
 
 export default function Timeline() {
   const [range, setRange] = useState(60);
-  const hist = useHub((s) => s.hist);
-  const snap = useHub((s) => s.snap);
-  const f = snap?.features;
-  const recent = hist.slice(-60);
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((n) => n + 1), 1000); return () => clearInterval(id); }, []);
 
   return (
-    <Shell eyebrow="Timeline" title="The link," accent="over time" lead="Every reading the laptop received, coloured by the path that carried it, against the Wi-Fi signal underneath. Problems appear as bands, lost readings as red cuts."
+    <Shell title="What" accent="happened"
       actions={
         <div className="bezel tight"><div className="core flex p-0.5" style={{ borderRadius: 999 }}>
           {RANGES.map((r) => (
@@ -172,29 +170,15 @@ export default function Timeline() {
         </div></div>
       }>
       <motion.div {...rise(0)}>
+        <EventLog />
+      </motion.div>
+      <motion.div {...rise(1)} className="mt-4">
         <Bezel>
           <div className="p-4 md:p-6">
-            <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
-              {[["Wi-Fi", COLOR.wifi], ["433 MHz radio", COLOR.radio], ["Both (handover)", COLOR.both]].map(([n, c]) => (
-                <span key={n} className="flex items-center gap-2"><i className="inline-block h-[3px] w-4 rounded-full" style={{ background: c, boxShadow: `0 0 8px ${c}` }} />{n}</span>
-              ))}
-              <span className="flex items-center gap-2"><i className="inline-block h-px w-4 border-t border-dashed" style={{ borderColor: "rgba(236,238,245,.6)" }} />Signal (dBm, right axis)</span>
-              <span className="flex items-center gap-2"><i className="inline-block h-3 w-px" style={{ background: COLOR.bad }} />Lost reading</span>
-            </div>
+            <div className="mb-3 text-[13px]" style={{ color: "var(--muted)" }}>Wi-Fi signal and every reading from the sensor board</div>
             <Chart range={range} />
           </div>
         </Bezel>
-      </motion.div>
-      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        {[
-          <Tile key="r" label="Signal" value={f?.rssi_now !== undefined ? f.rssi_now.toFixed(0) : "–"} unit="dBm" data={recent.map((p) => p.rssi)} color={COLOR.wifi} min={-100} max={-30} />,
-          <Tile key="t" label="Trend" value={f?.rssi_slope !== undefined ? `${f.rssi_slope >= 0 ? "+" : ""}${f.rssi_slope.toFixed(1)}` : "–"} unit="dB/s" data={recent.map((p, i, a) => (i ? p.rssi - a[i - 1].rssi : 0))} color={COLOR.both} min={-6} max={6} />,
-          <Tile key="p" label="Ping to laptop" value={f?.rtt_mean !== undefined ? (f.rtt_mean >= 999 ? "none" : f.rtt_mean.toFixed(0)) : "–"} unit="ms" data={recent.map((p) => p.rtt)} color={COLOR.radio} min={0} max={400} />,
-          <Tile key="l" label="Packet loss" value={f?.loss_mean !== undefined ? f.loss_mean.toFixed(0) : "–"} unit="%" data={recent.map((p) => p.loss)} color={COLOR.bad} min={0} max={100} />,
-        ].map((t, i) => <motion.div key={i} {...rise(i + 1)}>{t}</motion.div>)}
-      </div>
-      <motion.div {...rise(5)}>
-        <EventLog />
       </motion.div>
     </Shell>
   );
@@ -202,89 +186,31 @@ export default function Timeline() {
 
 function EventLog() {
   const events = useHub((s) => s.snap?.events ?? []);
-  const [filter, setFilter] = useState<string>("all");
-
-  const filtered = events.filter((e) => {
-    const k = (e.kind || e.type || "").toUpperCase();
-    if (filter === "all") return true;
-    if (filter === "cmd") return k.includes("COMMAND") || k.includes("RATE") || k.includes("OPERATOR");
-    if (filter === "fail") return k.includes("LOST") || k.includes("FAIL") || k.includes("TIMEOUT") || k.includes("OFFLINE") || k.includes("JAMMING") || k.includes("THREAT");
-    if (filter === "radio") return k.includes("RADIO") || k.includes("BUTTON") || k.includes("MODE");
-    return true;
-  });
+  const shown = events.filter((e) => DEV || (e.kind || e.type || "") in EVENT_TEXT).slice(0, 40);
 
   return (
-    <div className="mt-4">
-      <Bezel tight lit={false}>
-        <div className="p-4 md:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3" style={{ borderColor: "var(--hair)" }}>
-            <div className="flex items-center gap-2">
-              <span className="eyebrow"><span className="dot breathe" />System Event Stream</span>
-              <span className="mono text-[11px] opacity-60">({events.length} events logged)</span>
-            </div>
-            <div className="flex items-center gap-1">
-              {[
-                { id: "all", label: "All" },
-                { id: "cmd", label: "Commands" },
-                { id: "radio", label: "Radio / Mode" },
-                { id: "fail", label: "Threats & Faults" },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={`chip !px-2.5 !py-1 !text-[11px] ${filter === f.id ? "on" : ""}`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="scroll-thin mt-3 max-h-[300px] overflow-y-auto space-y-1.5">
-            {filtered.length === 0 ? (
-              <div className="py-8 text-center text-[12px] opacity-40">No matching events in memory</div>
-            ) : (
-              filtered.map((e, i) => {
-                const date = new Date(e.t * 1000);
-                const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}.${String(Math.floor((e.t % 1) * 1000)).padStart(3, "0")}`;
-                const k = (e.kind || e.type || "EVENT").toUpperCase();
-                const d = e.detail || e.msg || "System telemetry update";
-                const isCmd = k.includes("COMMAND") || k.includes("OPERATOR");
-                const isFail = k.includes("LOST") || k.includes("FAIL") || k.includes("TIMEOUT") || k.includes("OFFLINE") || k.includes("JAMMING") || k.includes("THREAT");
-                const isRadio = k.includes("RADIO") || k.includes("BUTTON");
-                const typeColor = isFail ? "var(--bad)" : isCmd ? "var(--accent)" : isRadio ? "var(--radio)" : "var(--good)";
-
-                return (
-                  <div
-                    key={`${e.t}-${i}`}
-                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-[12px] transition-colors"
-                    style={{ background: "rgba(255,255,255,.02)", border: "1px solid var(--hair)" }}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="mono text-[11px] opacity-40 shrink-0">{timeStr}</span>
-                      <span
-                        className="mono text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
-                        style={{
-                          background: `color-mix(in srgb, ${typeColor} 14%, transparent)`,
-                          color: typeColor,
-                          border: `1px solid color-mix(in srgb, ${typeColor} 28%, transparent)`,
-                        }}
-                      >
-                        {k}
-                      </span>
-                      <span className="truncate text-[12px] text-[var(--ink)]">{d}</span>
-                    </div>
-                    <span className="mono text-[10px] opacity-50 shrink-0 px-1 rounded bg-[rgba(255,255,255,.05)]">
-                      {e.source || "CLUSTER"}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </Bezel>
-    </div>
+    <Bezel tight lit={false}>
+      <div className="scroll-thin max-h-[420px] space-y-1.5 overflow-y-auto p-4 md:p-5">
+        {shown.length === 0 ? (
+          <div className="py-10 text-center text-[13px]" style={{ color: "var(--muted)" }}>Nothing yet. Press a button on a board or on the Live page.</div>
+        ) : (
+          shown.map((e, i) => {
+            const k = (e.kind || e.type || "EVENT").toUpperCase();
+            const d = e.detail || e.msg || "";
+            const text = EVENT_TEXT[k] ? EVENT_TEXT[k](d) : `${k}: ${d}`;
+            const tone = EVENT_TONE[k] ?? "var(--muted)";
+            const time = new Date(e.t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+            return (
+              <div key={`${e.t}-${i}`} className="flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px]"
+                style={{ background: "rgba(255,255,255,.02)", border: "1px solid var(--hair)" }}>
+                <i className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: tone, boxShadow: `0 0 8px ${tone}` }} />
+                <span className="mono shrink-0 text-[12px]" style={{ color: "var(--faint)" }}>{time}</span>
+                <span className="truncate">{text}</span>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </Bezel>
   );
 }
-

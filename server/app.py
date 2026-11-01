@@ -278,14 +278,18 @@ class Hub:
         if "ip" in d:
             self.sentinel["ip"] = d["ip"]
         self.air["ch"] = d.get("ch", self.air.get("ch", 6))
+        # Node 3 repeats its state every 500 ms (three copies each); act only when the fault starts
+        started = fault == 1 and not getattr(self, "n3_fault_seen", 0)
+        self.n3_fault_seen = fault
         if fault == 1:
             self.agent.alert = "deauth"
             self.air["deauth_per_s"] = 145.0
             self.air["frames_per_s"] = 480.0
             self.gateway["alert"] = "PREDICTIVE_FAILOVER"
-            self.log_event("SENTINEL_FAULT_INJECTED", f"Node 3 Sentinel injected {d.get('anomaly', 'ANOMALY')}", "NODE_3_SENTINEL")
-            # Immediately broadcast alarm to physical Node 2 buzzer and Node 1 LEDs!
-            self.broadcast_cluster_command({"cmd": "buzzer", "val": 1, "alert": "threat"})
+            if started:
+                self.log_event("SENTINEL_FAULT_INJECTED", f"Node 3 Sentinel injected {d.get('anomaly', 'ANOMALY')}", "NODE_3_SENTINEL")
+                # Immediately broadcast alarm to physical Node 2 buzzer and Node 1 LEDs!
+                self.broadcast_cluster_command({"cmd": "buzzer", "val": 1, "alert": "threat"})
         else:
             self.air["deauth_per_s"] = 0.0
             self.air["frames_per_s"] = 40.0

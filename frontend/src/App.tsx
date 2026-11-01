@@ -10,7 +10,6 @@ import NodeTags from "./ui/NodeTags";
 import AlertBanner from "./ui/AlertBanner";
 import ViewHost from "./ui/views/ViewHost";
 import SceneBoundary from "./ui/SceneBoundary";
-import Hint from "./ui/Hint";
 import Moments from "./ui/Moments";
 
 const Scene = lazy(() => import("./scene/Scene"));
@@ -59,7 +58,6 @@ export default function App() {
         <button onClick={() => useUi.getState().setZen(false)} className="pill fixed right-6 top-5 z-30 !py-1.5 !pl-4 !pr-1.5 !text-[12px] opacity-60 hover:opacity-100">Exit presentation <span className="ico !h-6 !w-6"><span className="mono text-[10px]">Z</span></span></button>
       ) : <Header />}
       <AlertBanner />
-      <Hint />
       <Moments />
       <AnimatePresence mode="wait">
         {view === "stage" && (

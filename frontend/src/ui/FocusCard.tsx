@@ -4,11 +4,11 @@ import { useHub, useUi, type NodeId } from "../lib/store";
 import { Bezel } from "./kit";
 
 const TITLE: Record<NodeId, [string, string]> = {
-  A: ["Node 1: Sensor", "ESP8266 · OLED #1 · IR ADC"],
-  hotspot: ["Hotspot AP", "Phone Wi-Fi Network"],
-  laptop: ["Laptop Hub", "Edge-ML Gateway Orchestrator"],
-  gateway: ["Node 2: Supervisor", "ESP8266 · OLED #2 · Cluster Watcher"],
-  air: ["Node 3: Sentinel", "ESP32 DevKit · Traffic Sentinel"],
+  A: ["Sensor", "Board 1 · notices anything coming close"],
+  hotspot: ["Wi-Fi", "The phone hotspot all boards share"],
+  laptop: ["Dashboard", "This laptop · watches and logs"],
+  gateway: ["Supervisor", "Board 2 · sounds the alarm"],
+  air: ["Sentinel", "Board 3 · watches the radio for attacks"],
 };
 
 function Stat({ k, v }: { k: string; v: string }) {

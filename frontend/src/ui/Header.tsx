@@ -2,12 +2,15 @@ import { motion } from "framer-motion";
 import { ChartLineUp, Cube, GraduationCap, ShieldCheck, Stethoscope } from "@phosphor-icons/react";
 import { useHub, useUi, type View } from "../lib/store";
 
+// Diagnosis, Incidents and Teach are developer tools: only with ?dev in the URL
+const DEV = new URLSearchParams(location.search).has("dev");
 const NAV: { id: View; label: string; Icon: typeof Cube }[] = [
-  { id: "stage", label: "Stage", Icon: Cube },
-  { id: "timeline", label: "Timeline", Icon: ChartLineUp },
-  { id: "diagnosis", label: "Diagnosis", Icon: Stethoscope },
-  { id: "incidents", label: "Incidents", Icon: ShieldCheck },
-  { id: "teach", label: "Teach", Icon: GraduationCap },
+  { id: "stage", label: "Live", Icon: Cube },
+  { id: "timeline", label: "What happened", Icon: ChartLineUp },
+  ...(DEV ? [{ id: "diagnosis" as View, label: "Diagnosis", Icon: Stethoscope }] : []),
+  // Incidents only records Wi-Fi outages from the older single-board setup
+  ...(DEV ? [{ id: "incidents" as View, label: "Incidents", Icon: ShieldCheck }] : []),
+  ...(DEV ? [{ id: "teach" as View, label: "Teach", Icon: GraduationCap }] : []),
 ];
 
 /** Floating glass pill: the active tab's highlight slides between items on a shared layout id. */
@@ -38,18 +41,7 @@ function Nav() {
   );
 }
 
-function Dot({ on, label, title }: { on: boolean; label: string; title: string }) {
-  return (
-    <span title={title} className="flex items-center gap-1.5 text-[11px] font-medium" style={{ color: on ? "var(--ink)" : "var(--faint)" }}>
-      <i className="inline-block h-1.5 w-1.5 rounded-full transition-all duration-700"
-        style={{ background: on ? "var(--good)" : "#3a3d48", boxShadow: on ? "0 0 10px var(--good)" : "none" }} />
-      {label}
-    </span>
-  );
-}
-
 export default function Header() {
-  const snap = useHub((s) => s.snap);
   const source = useHub((s) => s.source);
   const wsOpen = useHub((s) => s.wsOpen);
   const setPinned = useHub((s) => s.setPinnedDemo);
@@ -62,18 +54,10 @@ export default function Header() {
               <path d="M4 17h6l3.5-9 5 16 3.5-7H28" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 5px var(--accent))" }} />
             </svg>
           </div>
-          <div className="leading-tight">
-            <div className="text-[15px] font-semibold tracking-tight">Self-Healing IoT Cluster</div>
-            <div className="text-[11px]" style={{ color: "var(--muted)" }}>predictive <span className="serif text-[13px]" style={{ color: "var(--ink)" }}>edge-AI</span> resilience</div>
-          </div>
+          <div className="text-[17px] font-semibold tracking-tight">Kinesis</div>
         </div>
 
         <div className="hit flex items-center gap-2 md:gap-4">
-          <div className="hidden items-center gap-3.5 min-[1400px]:flex">
-            <Dot on={!!snap?.node.online} label="Node 1: Sensor" title="ESP8266 + OLED #1 + IR" />
-            <Dot on={!!snap?.gateway.online} label="Node 2: Supervisor" title="ESP8266 + OLED #2 + Alert" />
-            <Dot on={!!snap?.sentinel.online} label="Node 3: Sentinel" title="ESP32 Fault/Channel Sentinel" />
-          </div>
           <div className="bezel tight"><div className="core flex items-center p-0.5" style={{ borderRadius: 999 }}>
             {(["live", "demo"] as const).map((k) => {
               const on = source === k;
@@ -86,7 +70,7 @@ export default function Header() {
                   {on && <motion.span layoutId="srcpill" className="absolute inset-0 rounded-full" style={{ background: "var(--accent-soft)" }} transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                   <span className="relative flex items-center gap-1.5">
                     {on && <i className="inline-block h-1.5 w-1.5 rounded-full breathe" style={{ background: "var(--accent)", boxShadow: "0 0 8px var(--accent)" }} />}
-                    {k === "live" ? "Live HW" : "Demo Sim"}
+                    {k === "live" ? "Live" : "Simulator"}
                   </span>
 
                 </button>
