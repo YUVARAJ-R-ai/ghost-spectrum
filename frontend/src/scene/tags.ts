@@ -5,11 +5,11 @@ import { POS, S } from "./world";
 
 export interface TagDef { id: NodeId; title: string; sub: string; at: THREE.Vector3; dot: () => string }
 export const TAGS: TagDef[] = [
-  { id: "A", title: "Sensor", sub: "", at: POS.A.clone().setY(2.55), dot: () => (S.online > 0.5 ? (S.radio > 0.5 ? COLOR.radio : COLOR.good) : "#4a4d58") },
-  { id: "hotspot", title: "Wi-Fi", sub: "", at: POS.hotspot.clone().setY(3.95), dot: () => (S.wifiUp > 0.5 ? (S.strength > 0.45 ? COLOR.good : COLOR.radio) : COLOR.bad) },
-  { id: "laptop", title: "Dashboard", sub: "", at: POS.laptop.clone().setY(2.35), dot: () => COLOR.good },
-  { id: "gateway", title: "Supervisor", sub: "", at: POS.gateway.clone().setY(1.8), dot: () => (S.gw < 0.5 ? "#4a4d58" : S.relay > 0.5 ? COLOR.radio : COLOR.good) },
-  { id: "air", title: "Sentinel", sub: "", at: POS.air.clone().setY(1.45), dot: () => (S.airOn < 0.5 ? "#4a4d58" : S.deauth > 0.5 ? COLOR.bad : COLOR.good) },
+  { id: "A", title: "Sensor", sub: "ESP8266 · OLED #1 · IR", at: POS.A.clone().setY(2.55), dot: () => (S.online > 0.5 ? (S.radio > 0.5 ? COLOR.radio : COLOR.good) : "#4a4d58") },
+  { id: "hotspot", title: "Wi-Fi", sub: "Phone hotspot", at: POS.hotspot.clone().setY(3.95), dot: () => (S.wifiUp > 0.5 ? (S.strength > 0.45 ? COLOR.good : COLOR.radio) : COLOR.bad) },
+  { id: "laptop", title: "Dashboard", sub: "Laptop hub · ML gateway", at: POS.laptop.clone().setY(2.35), dot: () => COLOR.good },
+  { id: "gateway", title: "Supervisor", sub: "ESP8266 · OLED #2 · Alert", at: POS.gateway.clone().setY(1.8), dot: () => (S.gw < 0.5 ? "#4a4d58" : S.relay > 0.5 ? COLOR.radio : COLOR.good) },
+  { id: "air", title: "Sentinel", sub: "ESP32 traffic sentinel", at: POS.air.clone().setY(1.45), dot: () => (S.airOn < 0.5 ? "#4a4d58" : S.deauth > 0.5 ? COLOR.bad : COLOR.good) },
 ];
 
 // screen position of each tag in CSS pixels, written by the 3D side every frame, read by the DOM side

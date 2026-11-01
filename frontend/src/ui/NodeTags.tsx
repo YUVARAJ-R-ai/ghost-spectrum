@@ -12,6 +12,7 @@ export default function NodeTags() {
   const dots = useRef<Record<string, HTMLElement | null>>({});
   const setFocus = useUi((s) => s.setFocus);
   const view = useUi((s) => s.view);
+  const details = useUi((s) => s.details);
 
   useEffect(() => {
     let id = 0, n = 0;
@@ -40,7 +41,7 @@ export default function NodeTags() {
       {TAGS.map((t) => (
         <button key={t.id} ref={(el) => { refs.current[t.id] = el; }} className="node-tag absolute left-0 top-0" style={{ opacity: 0 }} onClick={() => setFocus(t.id)}>
           <i ref={(el) => { dots.current[t.id] = el; }} />
-          <span><b>{t.title}</b>{t.sub && <em>{t.sub}</em>}</span>
+          <span><b>{t.title}</b>{details && <em>{t.sub}</em>}</span>
         </button>
       ))}
     </div>

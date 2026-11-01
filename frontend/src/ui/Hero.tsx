@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Broadcast, WifiHigh, WarningCircle, Lock } from "@phosphor-icons/react";
-import { useHub } from "../lib/store";
+import { useHub, useUi } from "../lib/store";
 import { useLink } from "../lib/linkState";
 import { Bezel, RiseText } from "./kit";
 import SensorWaveform from "./SensorWaveform";
@@ -11,6 +11,7 @@ const TONE: Record<Tone, string> = { good: "var(--good)", bad: "var(--bad)", war
 /** The headline: one status you can read from across a room, the live sensor, and one line per board. */
 export default function Hero() {
   const link = useLink();
+  const details = useUi((s) => s.details);
   const snap = useHub((s) => s.snap);
   const sensor = snap?.node.sensor ?? 1023;
   const near = sensor < 450;
@@ -56,6 +57,17 @@ export default function Hero() {
               </div>
             ))}
           </div>
+
+          {details && (
+            <div className="mono mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-3 py-2 text-[11px]" style={{ background: "rgba(255,255,255,.03)", border: "1px solid var(--hair)", color: "var(--muted)" }}>
+              <span>IR <b style={{ color: "var(--ink)" }}>{sensor}</b></span>
+              <span>Seq <b style={{ color: "var(--ink)" }}>#{snap?.node.seq ?? 0}</b></span>
+              <span>RSSI <b style={{ color: "var(--ink)" }}>{snap?.node.rssi ?? "–"} dBm</b></span>
+              <span>Ping <b style={{ color: "var(--ink)" }}>{snap?.node.rtt ?? "–"} ms</b></span>
+              <span>Loss <b style={{ color: "var(--ink)" }}>{snap?.node.loss ?? 0}%</b></span>
+              <span>Packets <b style={{ color: "var(--ink)" }}>{snap?.total ?? 0}</b></span>
+            </div>
+          )}
         </div>
       </Bezel>
     </motion.section>

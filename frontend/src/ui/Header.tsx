@@ -2,15 +2,12 @@ import { motion } from "framer-motion";
 import { ChartLineUp, Cube, GraduationCap, ShieldCheck, Stethoscope } from "@phosphor-icons/react";
 import { useHub, useUi, type View } from "../lib/store";
 
-// Diagnosis, Incidents and Teach are developer tools: only with ?dev in the URL
-const DEV = new URLSearchParams(location.search).has("dev");
 const NAV: { id: View; label: string; Icon: typeof Cube }[] = [
   { id: "stage", label: "Live", Icon: Cube },
-  { id: "timeline", label: "What happened", Icon: ChartLineUp },
-  ...(DEV ? [{ id: "diagnosis" as View, label: "Diagnosis", Icon: Stethoscope }] : []),
-  // Incidents only records Wi-Fi outages from the older single-board setup
-  ...(DEV ? [{ id: "incidents" as View, label: "Incidents", Icon: ShieldCheck }] : []),
-  ...(DEV ? [{ id: "teach" as View, label: "Teach", Icon: GraduationCap }] : []),
+  { id: "timeline", label: "Timeline", Icon: ChartLineUp },
+  { id: "diagnosis", label: "Diagnosis", Icon: Stethoscope },
+  { id: "incidents", label: "Incidents", Icon: ShieldCheck },
+  { id: "teach", label: "Teach", Icon: GraduationCap },
 ];
 
 /** Floating glass pill: the active tab's highlight slides between items on a shared layout id. */
@@ -45,6 +42,8 @@ export default function Header() {
   const source = useHub((s) => s.source);
   const wsOpen = useHub((s) => s.wsOpen);
   const setPinned = useHub((s) => s.setPinnedDemo);
+  const details = useUi((s) => s.details);
+  const setDetails = useUi((s) => s.setDetails);
   return (
     <>
       <header className="fixed left-0 right-0 top-0 z-20 flex items-start justify-between gap-4 px-4 pt-4 md:px-7 md:pt-5">
@@ -58,6 +57,11 @@ export default function Header() {
         </div>
 
         <div className="hit flex items-center gap-2 md:gap-4">
+          <button onClick={() => setDetails(!details)} aria-pressed={details} title="Show the raw numbers and technical panels"
+            className="rounded-full px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[.14em] transition-colors duration-500"
+            style={{ color: details ? "var(--ink)" : "var(--faint)", background: details ? "var(--accent-soft)" : "rgba(255,255,255,.03)", border: "1px solid var(--hair)" }}>
+            Details
+          </button>
           <div className="bezel tight"><div className="core flex items-center p-0.5" style={{ borderRadius: 999 }}>
             {(["live", "demo"] as const).map((k) => {
               const on = source === k;

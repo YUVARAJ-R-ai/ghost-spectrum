@@ -1,5 +1,7 @@
 import Hero from "./Hero";
 import ControlPanel from "./ControlPanel";
+import DiagCard from "./DiagCard";
+import AgentFeed from "./AgentFeed";
 import DemoDock from "./DemoDock";
 import VoiceChatConsole from "./VoiceChatConsole";
 import { motion } from "framer-motion";
@@ -12,6 +14,7 @@ import { useUi } from "../lib/store";
  */
 export default function StageUI() {
   const zen = useUi((s) => s.zen);
+  const details = useUi((s) => s.details);
   return (
     <div className="stage-ui fixed inset-0 z-10 overflow-y-auto overscroll-contain md:overflow-hidden" style={{ pointerEvents: "none" }}>
       <div className="h-[52dvh] md:hidden" />
@@ -21,6 +24,8 @@ export default function StageUI() {
           transition={{ duration: 1.1, delay: 0.4, ease: [0.32, 0.72, 0, 1] }}
           className="flex min-h-0 flex-col gap-2.5 md:absolute md:bottom-7 md:right-7 md:top-[96px] md:w-[400px] md:overflow-y-auto md:pr-1 scroll-thin [&>*]:shrink-0 pointer-events-auto">
           <ControlPanel />
+          {details && <DiagCard />}
+          {details && <AgentFeed className="!shrink min-h-[84px] max-h-[160px]" />}
           <DemoDock />
         </motion.div>}
         <VoiceChatConsole />

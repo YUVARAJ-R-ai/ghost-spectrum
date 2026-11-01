@@ -1,3 +1,4 @@
+import { useUi } from "../lib/store";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -24,10 +25,18 @@ interface ChatMessage {
   t: number;
 }
 
-const QUICK_COMMANDS = [
+const QUICK_COMMANDS_PLAIN = [
   { label: "What's happening?", text: "what is happening on the network right now?" },
   { label: "Test alarm", text: "test the alarm" },
   { label: "Simulate attack", text: "simulate a jamming attack" },
+];
+const QUICK_COMMANDS_DEV = [
+  { label: "⚡ Jamming", text: "simulate jamming on node 3" },
+  { label: "🔔 Test Alarm", text: "test supervisor buzzer" },
+  { label: "🟢 Re-Arm", text: "clear alerts and rearm" },
+  { label: "🎯 Calibrate", text: "calibrate optical sensor" },
+  { label: "⚡ Fast 250ms", text: "set rate to 250ms" },
+  { label: "📊 Status", text: "cluster status report" },
 ];
 
 export default function VoiceChatConsole() {
@@ -35,6 +44,7 @@ export default function VoiceChatConsole() {
   const [listening, setListening] = useState(false);
   const [voiceReply, setVoiceReply] = useState(true);
   const [engine, setEngine] = useState<"auto" | "bedrock" | "jev">("auto");
+  const details = useUi((s) => s.details);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -204,6 +214,10 @@ export default function VoiceChatConsole() {
                 <TerminalWindow size={16} weight="light" style={{ color: "var(--accent)" }} />
                 <div>
                   <div className="text-[13px] font-semibold tracking-tight">Assistant</div>
+                  {details &&                   <div className="mono text-[9.5px] text-[var(--muted)] flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--good)] inline-block" />
+                    AWS Bedrock + Local JEV Dual-Engine
+                  </div>}
                 </div>
               </div>
 
@@ -227,6 +241,48 @@ export default function VoiceChatConsole() {
               </div>
             </div>
 
+            {details && (<>
+            {/* AI Engine Selector Bar */}
+            <div className="flex items-center justify-between border-b px-3.5 py-1.5 text-[10px] mono" style={{ borderColor: "var(--hair)", background: "rgba(0,0,0,.3)" }}>
+              <span className="text-[var(--muted)]">ENGINE:</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setEngine("auto")}
+                  className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
+                    engine === "auto"
+                      ? "bg-white/15 text-white font-semibold"
+                      : "text-[var(--muted)] hover:text-white"
+                  }`}
+                  title="Auto-route: Fast tools to JEV, reasoning to Bedrock"
+                >
+                  <Cpu size={11} /> Auto
+                </button>
+                <button
+                  onClick={() => setEngine("bedrock")}
+                  className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
+                    engine === "bedrock"
+                      ? "bg-[rgba(56,189,248,.2)] text-[var(--accent)] font-semibold border border-[rgba(56,189,248,.4)]"
+                      : "text-[var(--muted)] hover:text-white"
+                  }`}
+                  title="AWS Bedrock (Amazon Nova Lite cloud reasoning)"
+                >
+                  <Cloud size={11} /> Bedrock
+                </button>
+                <button
+                  onClick={() => setEngine("jev")}
+                  className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
+                    engine === "jev"
+                      ? "bg-[rgba(52,211,153,.2)] text-[var(--good)] font-semibold border border-[rgba(52,211,153,.4)]"
+                      : "text-[var(--muted)] hover:text-white"
+                  }`}
+                  title="Local JEV: Sub-5ms on-device fast tool calling & autonomic link agent"
+                >
+                  <Lightning size={11} /> JEV Local
+                </button>
+              </div>
+            </div>
+
+            </>)}
             {/* Message Feed */}
             <div className="h-[240px] overflow-y-auto p-3.5 space-y-2.5 scroll-thin text-[12px]">
               {messages.map((m) => (
@@ -234,6 +290,27 @@ export default function VoiceChatConsole() {
                   key={m.id}
                   className={`flex flex-col ${m.sender === "operator" ? "items-end" : "items-start"}`}
                 >
+                  {details &&                   <div className="mono text-[9px] text-[var(--muted)] mb-0.5 px-1 flex items-center gap-1.5">
+                    <span>{m.sender === "operator" ? "OPERATOR" : "INTELLIGENCE"}</span>
+                    {m.engine && (
+                      <span className="rounded px-1 py-0.2 text-[8px] font-semibold uppercase"
+                        style={{
+                          background: m.engine === "bedrock" ? "rgba(56,189,248,.15)" : "rgba(52,211,153,.15)",
+                          color: m.engine === "bedrock" ? "var(--accent)" : "var(--good)"
+                        }}>
+                        {m.engine === "bedrock" ? "☁️ Bedrock" : "⚡ JEV"}
+                      </span>
+                    )}
+                    {m.latency_ms !== undefined && (
+                      <span className="text-[8px] opacity-50">{m.latency_ms}ms</span>
+                    )}
+                    {m.action && (
+                      <span className="rounded px-1 text-[8.5px] font-semibold tracking-wider uppercase ml-auto"
+                        style={{ background: "rgba(100,200,255,.12)", color: "var(--accent)" }}>
+                        {m.action}
+                      </span>
+                    )}
+                  </div>}
                   <div
                     className="max-w-[90%] rounded-xl px-3 py-2 leading-relaxed"
                     style={{
@@ -256,7 +333,7 @@ export default function VoiceChatConsole() {
               {busy && (
                 <div className="flex items-center gap-2 text-[11px] mono text-[var(--muted)] py-1">
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)] animate-ping" />
-                  Thinking…
+                  {details ? (engine === "bedrock" ? "Reasoning with AWS Bedrock..." : "Evaluating with Local JEV...") : "Thinking…"}
                 </div>
               )}
               <div ref={endRef} />
@@ -264,7 +341,7 @@ export default function VoiceChatConsole() {
 
             {/* Quick Tactical Prompt Chips */}
             <div className="border-t px-3 py-2 flex items-center gap-1.5 overflow-x-auto scroll-none" style={{ borderColor: "var(--hair)" }}>
-              {QUICK_COMMANDS.map((q) => (
+              {(details ? QUICK_COMMANDS_DEV : QUICK_COMMANDS_PLAIN).map((q) => (
                 <button
                   key={q.label}
                   onClick={() => handleSend(q.text)}

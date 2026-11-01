@@ -114,6 +114,8 @@ interface UiState {
   quality: "high" | "low";
   autoRotate: boolean;
   zen: boolean;   // presentation mode: just the stage and the headline
+  details: boolean; // technical layer: raw numbers, model panels, engine picker, link controls
+  setDetails: (v: boolean) => void;
   setZen: (v: boolean) => void;
   setView: (v: View) => void;
   setFocus: (n: NodeId | null) => void;
@@ -121,7 +123,8 @@ interface UiState {
   setAutoRotate: (v: boolean) => void;
 }
 export const useUi = create<UiState>((set) => ({
-  view: "stage", focus: null, quality: "high", autoRotate: true, zen: false,
+  view: "stage", focus: null, quality: "high", autoRotate: true, zen: false, details: false,
+  setDetails: (details) => set({ details }),
   setZen: (zen) => set({ zen, focus: null }),
   setView: (view) => set({ view, focus: null, zen: false }),
   setFocus: (focus) => set({ focus }),

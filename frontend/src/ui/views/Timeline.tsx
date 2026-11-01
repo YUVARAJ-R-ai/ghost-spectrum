@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { useHub } from "../../lib/store";
+import { useHub, useUi } from "../../lib/store";
 import { COLOR, DIAG_COLOR, DIAG_NAME } from "../../lib/format";
 import { useRaf, Bezel } from "../kit";
 import Shell, { rise } from "./Shell";
@@ -126,8 +126,32 @@ function Chart({ range }: { range: number }) {
   );
 }
 
+function Spark({ data, color, min, max }: { data: number[]; color: string; min: number; max: number }) {
+  if (data.length < 2) return <div className="h-10" />;
+  const pts = data.map((v, i) => `${((i / (data.length - 1)) * 100).toFixed(2)},${(36 - ((Math.min(max, Math.max(min, v)) - min) / (max - min)) * 34).toFixed(2)}`);
+  return (
+    <svg viewBox="0 0 100 38" preserveAspectRatio="none" className="h-10 w-full overflow-visible">
+      <defs><linearGradient id={`sg${color.slice(1)}`} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={color} stopOpacity=".3" /><stop offset="1" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+      <polygon points={`0,38 ${pts.join(" ")} 100,38`} fill={`url(#sg${color.slice(1)})`} />
+      <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+    </svg>
+  );
+}
+
+function Tile({ label, value, unit, data, color, min, max }: { label: string; value: string; unit: string; data: number[]; color: string; min: number; max: number }) {
+  return (
+    <Bezel tight lit={false}>
+      <div className="p-4">
+        <div className="label">{label}</div>
+        <div className="mt-1.5 flex items-baseline gap-1.5"><span className="mono text-[26px] font-medium tracking-tight">{value}</span><span className="text-[12px]" style={{ color: "var(--muted)" }}>{unit}</span></div>
+        <div className="mt-3"><Spark data={data} color={color} min={min} max={max} /></div>
+      </div>
+    </Bezel>
+  );
+}
+
 // Events worth showing to an audience, in plain words. Anything not listed (command bookkeeping,
-// config changes) stays out of the list; ?dev shows everything.
+// config changes) stays out of the list; the Details toggle shows everything.
 const EVENT_TEXT: Record<string, (detail: string) => string> = {
   SENTINEL_FAULT_INJECTED: () => "Board 3 detected a jamming attack",
   SENTINEL_FAULT_CLEARED: () => "Attack over, back to normal",
@@ -150,10 +174,13 @@ const EVENT_TONE: Record<string, string> = {
   SENTINEL_FAULT_CLEARED: "var(--good)", CLUSTER_ALERTS_CLEARED: "var(--good)", ALERT_CLEARED: "var(--good)", WIFI_RECOVERY_CONFIRMED: "var(--good)",
   SUPERVISOR_BUZZER_TEST: "var(--warn)", BUZZER_TEST: "var(--warn)", OPERATOR_COMMAND: "var(--accent)",
 };
-const DEV = new URLSearchParams(location.search).has("dev");
 
 export default function Timeline() {
   const [range, setRange] = useState(60);
+  const hist = useHub((s) => s.hist);
+  const f = useHub((s) => s.snap?.features);
+  const details = useUi((s) => s.details);
+  const recent = hist.slice(-60);
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((n) => n + 1), 1000); return () => clearInterval(id); }, []);
 
@@ -169,6 +196,16 @@ export default function Timeline() {
           ))}
         </div></div>
       }>
+      {details && (
+        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+          {[
+            <Tile key="r" label="Signal" value={f?.rssi_now !== undefined ? f.rssi_now.toFixed(0) : "–"} unit="dBm" data={recent.map((p) => p.rssi)} color={COLOR.wifi} min={-100} max={-30} />,
+            <Tile key="t" label="Trend" value={f?.rssi_slope !== undefined ? `${f.rssi_slope >= 0 ? "+" : ""}${f.rssi_slope.toFixed(1)}` : "–"} unit="dB/s" data={recent.map((p, i, a) => (i ? p.rssi - a[i - 1].rssi : 0))} color={COLOR.both} min={-6} max={6} />,
+            <Tile key="p" label="Ping to laptop" value={f?.rtt_mean !== undefined ? (f.rtt_mean >= 999 ? "none" : f.rtt_mean.toFixed(0)) : "–"} unit="ms" data={recent.map((p) => p.rtt)} color={COLOR.radio} min={0} max={400} />,
+            <Tile key="l" label="Packet loss" value={f?.loss_mean !== undefined ? f.loss_mean.toFixed(0) : "–"} unit="%" data={recent.map((p) => p.loss)} color={COLOR.bad} min={0} max={100} />,
+          ].map((t, i) => <motion.div key={i} {...rise(i + 1)}>{t}</motion.div>)}
+        </div>
+      )}
       <motion.div {...rise(0)}>
         <EventLog />
       </motion.div>
@@ -186,7 +223,8 @@ export default function Timeline() {
 
 function EventLog() {
   const events = useHub((s) => s.snap?.events ?? []);
-  const shown = events.filter((e) => DEV || (e.kind || e.type || "") in EVENT_TEXT).slice(0, 40);
+  const details = useUi((s) => s.details);
+  const shown = events.filter((e) => details || (e.kind || e.type || "") in EVENT_TEXT).slice(0, 40);
 
   return (
     <Bezel tight lit={false}>
