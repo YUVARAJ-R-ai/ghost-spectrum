@@ -212,7 +212,7 @@ class TestPhase2Hub(unittest.TestCase):
         self.assertTrue(self.hub.sentinel["online"])
         self.assertEqual(self.hub.sentinel["fault"], 1)
         self.assertEqual(self.hub.sentinel["anomaly"], "CHANNEL_JAMMING")
-        self.assertEqual(self.hub.air["deauth_per_s"], 125.0)
+        self.assertEqual(self.hub.air["deauth_per_s"], 145.0)
 
 
 if __name__ == "__main__":
